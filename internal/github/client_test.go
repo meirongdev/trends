@@ -64,3 +64,74 @@ func TestSearchRepositoriesSetsAuthHeader(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "bearer tok1", gotAuth)
 }
+
+func TestFetchByNodeIDsParsesMetrics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/graphql", r.URL.Path)
+		require.Equal(t, http.MethodPost, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+		  "data": {
+		    "nodes": [
+		      {"databaseId": 111, "stargazerCount": 500, "forkCount": 40,
+		       "issues": {"totalCount": 7}, "watchers": {"totalCount": 9}},
+		      null
+		    ],
+		    "rateLimit": {"remaining": 4999, "resetAt": "2026-06-03T01:00:00Z"}
+		  }
+		}`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	metrics, err := c.FetchByNodeIDs(context.Background(), []string{"R_111", "R_dead"})
+	require.NoError(t, err)
+	require.Len(t, metrics, 1) // null 节点被跳过
+	require.Equal(t, int64(111), metrics[0].GitHubID)
+	require.Equal(t, 500, metrics[0].Stars)
+	require.Equal(t, 40, metrics[0].Forks)
+	require.Equal(t, 7, metrics[0].OpenIssues)
+	require.Equal(t, 9, metrics[0].Watchers)
+}
+
+func TestFetchByNodeIDsPartialErrorsReturnsValidNodes(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{
+		  "data": {"nodes": [
+		    {"databaseId": 1, "stargazerCount": 10, "forkCount": 1, "issues": {"totalCount": 0}, "watchers": {"totalCount": 0}},
+		    null
+		  ]},
+		  "errors": [{"message": "Could not resolve to a node with the global id of 'R_dead'"}]
+		}`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	metrics, err := c.FetchByNodeIDs(context.Background(), []string{"R_1", "R_dead"})
+	require.NoError(t, err) // 个别坏 id 不丢弃整批
+	require.Len(t, metrics, 1)
+	require.Equal(t, int64(1), metrics[0].GitHubID)
+}
+
+func TestFetchByNodeIDsAllErrorsReturnsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"data": {"nodes": []}, "errors": [{"message": "Bad query"}]}`))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	_, err := c.FetchByNodeIDs(context.Background(), []string{"R_x"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Bad query")
+}
+
+func TestFetchByNodeIDsRejectsTooManyIDs(t *testing.T) {
+	c := NewClient("http://unused", "http://unused/graphql", nil)
+	ids := make([]string, 101)
+	for i := range ids {
+		ids[i] = "R_x"
+	}
+	_, err := c.FetchByNodeIDs(context.Background(), ids)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "too many")
+}
