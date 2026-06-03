@@ -86,13 +86,15 @@ type LanguageCount struct {
 	Count    int
 }
 
-// LanguageCounts 返回各语言的活跃仓库数,按数量降序、同数按语言名升序;排除空语言。
-func (d *DB) LanguageCounts() ([]LanguageCount, error) {
+// RankingLanguageCounts 返回某 period+date 榜单上各语言的仓库数(用于趋势页的语言筛选 Tab),
+// 与 /trending?language=X 的 total 一致;按数量降序、同数按语言名升序;排除空语言。
+func (d *DB) RankingLanguageCounts(period, date string) ([]LanguageCount, error) {
 	rows, err := d.db.Query(`
-SELECT language, COUNT(*) FROM repositories
-WHERE is_active=1 AND language IS NOT NULL AND language <> ''
-GROUP BY language
-ORDER BY COUNT(*) DESC, language`)
+SELECT r.language, COUNT(*) FROM trending_rankings tr
+JOIN repositories r ON r.id = tr.repository_id
+WHERE tr.period=? AND tr.period_date=? AND r.language IS NOT NULL AND r.language <> ''
+GROUP BY r.language
+ORDER BY COUNT(*) DESC, r.language`, period, date)
 	if err != nil {
 		return nil, err
 	}

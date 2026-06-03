@@ -85,20 +85,22 @@ func TestListAndCountRankingsWithLanguageFilterAndPaging(t *testing.T) {
 	require.Equal(t, 2, page2[0].Rank)
 }
 
-func TestLanguageCounts(t *testing.T) {
+func TestRankingLanguageCounts(t *testing.T) {
 	db := newTestDB(t)
-	mk := func(gid int64, node, full, lang string) {
-		_, err := db.UpsertRepository(Repository{GitHubID: gid, NodeID: node, FullName: full, Owner: "a", Name: node, HTMLURL: "u", Language: lang})
-		require.NoError(t, err)
-	}
-	mk(1, "R1", "a/1", "Go")
-	mk(2, "R2", "a/2", "Go")
-	mk(3, "R3", "a/3", "Rust")
-	mk(4, "R4", "a/4", "") // 空语言不计入
+	seedRanked(t, db, 1, "R1", "a/go1", "Go", 1000, 1, 200, 0.9, "2026-06-10")
+	seedRanked(t, db, 2, "R2", "a/go2", "Go", 800, 2, 100, 0.5, "2026-06-10")
+	seedRanked(t, db, 3, "R3", "a/rust1", "Rust", 500, 3, 50, 0.3, "2026-06-10")
+	// 不同日期的榜单不应计入 2026-06-10
+	seedRanked(t, db, 4, "R4", "a/go3", "Go", 700, 1, 90, 0.4, "2026-06-09")
 
-	counts, err := db.LanguageCounts()
+	counts, err := db.RankingLanguageCounts("daily", "2026-06-10")
 	require.NoError(t, err)
 	require.Equal(t, []LanguageCount{{Language: "Go", Count: 2}, {Language: "Rust", Count: 1}}, counts)
+
+	// 空 period+date → 空
+	empty, err := db.RankingLanguageCounts("daily", "2020-01-01")
+	require.NoError(t, err)
+	require.Empty(t, empty)
 }
 
 func TestHealthInfo(t *testing.T) {
