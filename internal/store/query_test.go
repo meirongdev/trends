@@ -84,3 +84,36 @@ func TestListAndCountRankingsWithLanguageFilterAndPaging(t *testing.T) {
 	require.Len(t, page2, 1)
 	require.Equal(t, 2, page2[0].Rank)
 }
+
+func TestLanguageCounts(t *testing.T) {
+	db := newTestDB(t)
+	mk := func(gid int64, node, full, lang string) {
+		_, err := db.UpsertRepository(Repository{GitHubID: gid, NodeID: node, FullName: full, Owner: "a", Name: node, HTMLURL: "u", Language: lang})
+		require.NoError(t, err)
+	}
+	mk(1, "R1", "a/1", "Go")
+	mk(2, "R2", "a/2", "Go")
+	mk(3, "R3", "a/3", "Rust")
+	mk(4, "R4", "a/4", "") // 空语言不计入
+
+	counts, err := db.LanguageCounts()
+	require.NoError(t, err)
+	require.Equal(t, []LanguageCount{{Language: "Go", Count: 2}, {Language: "Rust", Count: 1}}, counts)
+}
+
+func TestHealthInfo(t *testing.T) {
+	db := newTestDB(t)
+	h, err := db.HealthInfo()
+	require.NoError(t, err)
+	require.Equal(t, 0, h.ActiveRepos)
+	require.Equal(t, "", h.LastSyncedAt)
+
+	_, err = db.UpsertRepository(sampleRepo())
+	require.NoError(t, err)
+	require.NoError(t, db.UpdateRepositoryMetrics(111, 100, 0, 0, 0, "2026-06-10T00:00:00Z"))
+
+	h, err = db.HealthInfo()
+	require.NoError(t, err)
+	require.Equal(t, 1, h.ActiveRepos)
+	require.Equal(t, "2026-06-10T00:00:00Z", h.LastSyncedAt)
+}

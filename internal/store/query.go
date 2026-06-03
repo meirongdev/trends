@@ -79,3 +79,52 @@ WHERE tr.period=? AND tr.period_date=?`
 	}
 	return out, rows.Err()
 }
+
+// LanguageCount 是某语言下的活跃仓库数。
+type LanguageCount struct {
+	Language string
+	Count    int
+}
+
+// LanguageCounts 返回各语言的活跃仓库数,按数量降序、同数按语言名升序;排除空语言。
+func (d *DB) LanguageCounts() ([]LanguageCount, error) {
+	rows, err := d.db.Query(`
+SELECT language, COUNT(*) FROM repositories
+WHERE is_active=1 AND language IS NOT NULL AND language <> ''
+GROUP BY language
+ORDER BY COUNT(*) DESC, language`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []LanguageCount
+	for rows.Next() {
+		var lc LanguageCount
+		if err := rows.Scan(&lc.Language, &lc.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, lc)
+	}
+	return out, rows.Err()
+}
+
+// Health 是 /healthz 暴露的运行信息。
+type Health struct {
+	LastSyncedAt string
+	ActiveRepos  int
+}
+
+// HealthInfo 返回最近一次采集同步时间与活跃仓库数(无数据时分别为 ""/0)。
+func (d *DB) HealthInfo() (Health, error) {
+	var h Health
+	var last sql.NullString
+	if err := d.db.QueryRow(`SELECT MAX(last_synced_at) FROM repositories`).Scan(&last); err != nil {
+		return h, err
+	}
+	h.LastSyncedAt = last.String
+	if err := d.db.QueryRow(`SELECT COUNT(*) FROM repositories WHERE is_active=1`).Scan(&h.ActiveRepos); err != nil {
+		return h, err
+	}
+	return h, nil
+}
