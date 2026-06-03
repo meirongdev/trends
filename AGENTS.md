@@ -44,7 +44,7 @@ Env vars: `DB_PATH` (default `trends.db`), `GITHUB_TOKENS` (comma-separated, rou
 | `internal/scoring` | Pure momentum scoring (no DB): EWMA + acceleration + window delta + relative growth, cohort min-max, configurable weights, `RankPeriod` |
 | `internal/ingest` | Jobs: `RunDiscovery`, `RunSnapshot` (computes `star_delta`), `RunScoring` (materializes daily/weekly/monthly Top-N) |
 | `internal/scheduler` | Thin `robfig/cron/v3` wrapper with graceful drain on stop |
-| `internal/api` | Read-only REST API (Go 1.22+ `ServeMux`): `GET /healthz`, `GET /api/v1/trending` (period/language/date/pagination), `GET /api/v1/languages`. `/api/v1/repositories/*` + `/api/v1/search` land in M1b-2. |
+| `internal/api` | Read-only REST API (Go 1.22+ `ServeMux`), 7 endpoints: `GET /healthz`, `/api/v1/trending`, `/api/v1/languages`, `/api/v1/repositories/{id}` (+ `/snapshots`, `/rankings`), `/api/v1/search`. |
 | `cmd/trends` | Wires config → store → github → jobs → scheduler + HTTP server |
 
 Dependency directions (no cycles): `github → store`; `scoring` is pure; `ingest → {github, store, scoring}`; `api → store`; `scheduler` standalone; `cmd → all`. Jobs depend on GitHub only through narrow interfaces (`ingest.Discoverer`, `ingest.Fetcher`) so they can be tested with fakes.
@@ -71,8 +71,8 @@ Dependency directions (no cycles): `github → store`; `scoring` is pure; `inges
 
 This codebase is built milestone-by-milestone with the superpowers flow: `brainstorming → spec.md → writing-plans → subagent-driven-development → finishing-a-development-branch`. Per-milestone implementation plans live in [`docs/superpowers/plans/`](./docs/superpowers/plans/). The product roadmap is `spec.md` §14.
 
-- **Done (merged to `main`):** M0 (data foundation), M1a (scoring & rankings), M1b-1 (read API: `/healthz`, `/api/v1/trending`, `/api/v1/languages`).
-- **Next:** M1b-2 — repo detail (`/api/v1/repositories/{id}` + `/snapshots` + `/rankings`) and `/api/v1/search`.
-- **Then:** M2 (Next.js SSR frontend / SEO), M3 (badges, developer rankings, live mentions).
+- **Done (merged to `main`):** M0 (data foundation), M1a (scoring & rankings), M1b (full read REST API — 7 endpoints). **The Go backend is feature-complete.**
+- **Next:** M2 — Next.js SSR frontend / SEO (consumes this API).
+- **Then:** M3 (badges, developer rankings, live mentions).
 
 Deferred scoring tuning (fork signal, winsorize, decay, yearly period, per-period weights) is documented in the M1a plan and intentionally not yet implemented.
