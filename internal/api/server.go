@@ -23,6 +23,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /api/v1/trending", s.handleTrending)
 	mux.HandleFunc("GET /api/v1/languages", s.handleLanguages)
+	mux.HandleFunc("GET /api/v1/repositories/{id}", s.handleRepository)
 	return mux
 }
 
