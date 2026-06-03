@@ -26,6 +26,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/repositories/{id}", s.handleRepository)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/snapshots", s.handleRepositorySnapshots)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/rankings", s.handleRepositoryRankings)
+	mux.HandleFunc("GET /api/v1/search", s.handleSearch)
 	return mux
 }
 
