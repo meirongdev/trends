@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/meirongdev/trends/internal/api"
 	"github.com/meirongdev/trends/internal/config"
 	"github.com/meirongdev/trends/internal/github"
 	"github.com/meirongdev/trends/internal/ingest"
@@ -59,7 +62,7 @@ func main() {
 		return ingest.RunScoring(ctx, db, date, scoreCfg)
 	}
 
-	// RUN_ONCE=discovery|snapshot|score 用于手动触发一次后退出;失败以非零码退出。
+	// RUN_ONCE=discovery|snapshot|score 用于手动触发一次后退出;失败以非零码退出。不起 HTTP 服务。
 	switch os.Getenv("RUN_ONCE") {
 	case "discovery":
 		if err := runDiscovery(); err != nil {
@@ -106,10 +109,29 @@ func main() {
 	}
 	sch.Start()
 	defer sch.Stop()
+
+	httpServer := &http.Server{
+		Addr:              cfg.APIListenAddr,
+		Handler:           api.NewServer(db).Routes(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		slog.Info("api listening", "addr", cfg.APIListenAddr)
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("http server", "err", err)
+		}
+	}()
+
 	slog.Info("trends started", "discovery_cron", cfg.DiscoveryCron, "snapshot_cron", cfg.SnapshotCron)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 	slog.Info("shutting down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		slog.Error("http shutdown", "err", err)
+	}
 }
