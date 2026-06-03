@@ -103,3 +103,7 @@ func TestRunDiscoveryBreaksOnEmptyPage(t *testing.T) {
 	require.Equal(t, 1, n)
 	require.Equal(t, 2, bc.calls) // page1 有数据,page2 空→break,不会一路翻到 page10
 }
+
+func (f *fakeClient) FetchByNodeIDs(_ context.Context, _ []string) ([]github.RepoMetrics, error) {
+	return f.metrics, nil
+}

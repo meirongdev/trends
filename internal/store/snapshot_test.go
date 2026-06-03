@@ -61,3 +61,20 @@ func TestLastStarsReturnsMostRecent(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, 200, stars) // 2026-06-03 是最近的
 }
+
+func TestStarsBeforeExcludesGivenDate(t *testing.T) {
+	db := newTestDB(t)
+	id, err := db.UpsertRepository(sampleRepo())
+	require.NoError(t, err)
+	require.NoError(t, db.InsertSnapshot(Snapshot{RepositoryID: id, Date: "2026-06-02", Stars: 400}))
+	require.NoError(t, db.InsertSnapshot(Snapshot{RepositoryID: id, Date: "2026-06-03", Stars: 500}))
+
+	stars, ok, err := db.StarsBefore(id, "2026-06-03") // 只应看到 06-02
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, 400, stars)
+
+	_, ok, err = db.StarsBefore(id, "2026-06-02") // 没有更早的快照
+	require.NoError(t, err)
+	require.False(t, ok)
+}

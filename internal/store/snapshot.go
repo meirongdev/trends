@@ -43,3 +43,20 @@ ORDER BY snapshot_date DESC LIMIT 1`, repositoryID).Scan(&stars)
 	}
 	return stars, true, nil
 }
+
+// StarsBefore 返回该仓库在 date 之前(不含当天)最近一次快照的 star 数;
+// 没有更早的快照时 ok=false。Snapshot 作业用它作增量基线,排除当天以保证同日重跑幂等。
+func (d *DB) StarsBefore(repositoryID int64, date string) (int, bool, error) {
+	var stars int
+	err := d.db.QueryRow(`
+SELECT stars FROM repository_snapshots
+WHERE repository_id=? AND snapshot_date < ?
+ORDER BY snapshot_date DESC LIMIT 1`, repositoryID, date).Scan(&stars)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+	return stars, true, nil
+}
