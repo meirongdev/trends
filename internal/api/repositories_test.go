@@ -66,3 +66,62 @@ func TestRepositoryDetailNullBestRankWhenNeverRanked(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
 	require.Nil(t, body.BestDailyRank) // 从未上榜 → null
 }
+
+func TestRepositorySnapshotsEndpoint(t *testing.T) {
+	s, db := newTestServer(t)
+	id := seedRepoWithMetrics(t, db, 1, "R1", "a/x", "Go", 1000, 50, 5)
+	require.NoError(t, db.InsertSnapshot(store.Snapshot{RepositoryID: id, Date: "2026-06-09", Stars: 130, StarDelta: 30}))
+	require.NoError(t, db.InsertSnapshot(store.Snapshot{RepositoryID: id, Date: "2026-06-10", Stars: 150, StarDelta: 20}))
+
+	rec := doGET(t, s, "/api/v1/repositories/1/snapshots")
+	require.Equal(t, http.StatusOK, rec.Code)
+	var body struct {
+		RepositoryID int64 `json:"repository_id"`
+		Snapshots    []struct {
+			Date      string `json:"date"`
+			Stars     int    `json:"stars"`
+			StarDelta int    `json:"star_delta"`
+		} `json:"snapshots"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, id, body.RepositoryID)
+	require.Len(t, body.Snapshots, 2)
+	require.Equal(t, "2026-06-09", body.Snapshots[0].Date)
+	require.Equal(t, 130, body.Snapshots[0].Stars)
+
+	rec = doGET(t, s, "/api/v1/repositories/1/snapshots?from=2026-06-10")
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Len(t, body.Snapshots, 1)
+
+	rec = doGET(t, s, "/api/v1/repositories/1/snapshots?from=bad")
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestRepositoryRankingsEndpoint(t *testing.T) {
+	s, db := newTestServer(t)
+	id := seedRepoWithMetrics(t, db, 1, "R1", "a/x", "Go", 1000, 50, 5)
+	require.NoError(t, db.ReplaceRankings("daily", "2026-06-10", []store.Ranking{{RepositoryID: id, Rank: 2, Score: 0.8, StarDelta: 20, Language: "Go"}}))
+	require.NoError(t, db.ReplaceRankings("weekly", "2026-06-10", []store.Ranking{{RepositoryID: id, Rank: 1, Score: 0.9, StarDelta: 30, Language: "Go"}}))
+
+	rec := doGET(t, s, "/api/v1/repositories/1/rankings")
+	require.Equal(t, http.StatusOK, rec.Code)
+	var body struct {
+		RepositoryID int64 `json:"repository_id"`
+		Rankings     []struct {
+			Period    string  `json:"period"`
+			Date      string  `json:"date"`
+			Rank      int     `json:"rank"`
+			Score     float64 `json:"score"`
+			StarDelta int     `json:"star_delta"`
+		} `json:"rankings"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, id, body.RepositoryID)
+	require.Len(t, body.Rankings, 2)
+}
+
+func TestRepositorySnapshotsBadID(t *testing.T) {
+	s, _ := newTestServer(t)
+	rec := doGET(t, s, "/api/v1/repositories/abc/snapshots")
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
