@@ -5,9 +5,9 @@
 
 - **状态**：草案 v1（待评审）
 - **创建日期**：2026-06-03
-- **技术栈**：Go 后端（API + 采集 worker）/ React（Next.js SSR）前端 / SQLite（WAL + Litestream）
+- **技术栈**：Go 后端（API + 采集 worker）/ React SPA（Vite,客户端渲染）前端 / SQLite（WAL + Litestream）
 - **数据来源**：GitHub REST/GraphQL API + 自建评分（不依赖 GitHub Trending 黑箱）
-- **定位**：面向公众的真实产品（SEO、性能、增长、可商业化）
+- **定位**：面向公众的真实产品（性能、增长、可商业化）。**SEO 非目标**——前端为客户端渲染 SPA,不做 SSR/SSG。
 
 ---
 
@@ -18,11 +18,11 @@
 - 提供可解释、可调参的「动量」排名，而非简单按总 star 排序。
 - 多时间维度（日/周/月/年）、按语言/话题筛选、单仓库历史洞察。
 - 通过可嵌入的趋势徽章形成自然增长回路（README 反向曝光）。
-- SEO 友好，每个仓库/话题/语言页都是可被搜索引擎索引的落地页。
+- 快速、干净的客户端 SPA 体验（榜单/详情/搜索)。**SEO 不是目标**(不做 SSR/SSG/sitemap)。
 
 ### 1.2 成功标准（MVP）
 - 每日稳定产出一份可信的趋势榜，覆盖 5 万+ 仓库的追踪宇宙。
-- 首页与各期榜单页在服务端渲染、可被 Google 索引。
+- 首页与各期榜单页在 SPA 中流畅加载（客户端调用 REST API）。
 - 单仓库详情页能展示 star 历史曲线与历史排名。
 - 采集任务在 GitHub API 限流内每日全量更新，失败可重试、可续跑。
 
@@ -38,7 +38,7 @@
 
 | 阶段 | 范围 | 交付物 |
 |---|---|---|
-| **MVP** | 仓库发现 + 每日快照采集 → 动量评分 → 日/周/月榜（首页 + 各期页）→ 语言筛选 → 仓库详情页（star 曲线 + 历史排名）→ 全文搜索 → SSR/SEO/sitemap | 可上线的趋势站 |
+| **MVP** | 仓库发现 + 每日快照采集 → 动量评分 → 日/周/月榜（首页 + 各期页）→ 语言筛选 → 仓库详情页（star 曲线 + 历史排名）→ 全文搜索 → React SPA（静态资源,由 Go 二进制托管） | 可上线的趋势站 |
 | **Phase 1** | 可嵌入 Badge（SVG）+ 仓库提交收录 + 话题/分类页 | 增长引擎 + 内容广度 |
 | **Phase 2** | 开发者排名 + Yearly 视图 + Insights/Stats 聚合页 + GitHub Trending 历史归档 | 深度与差异化 |
 | **Phase 3** | Live Mentions（社交提及）+ 账号/订阅通知 + 赞助位/商业化 | 商业化与留存 |
@@ -53,8 +53,8 @@
                          ┌────────────────────────────────────────┐
                          │            单一 Go 二进制                 │
    GitHub REST/GraphQL   │  ┌───────────────┐   ┌───────────────┐  │
-   ───────────────────►  │  │ 采集 Scheduler │   │   API Server   │  │  ◄──── Next.js (SSR)
-       (轮询/搜索)        │  │   (cron jobs)  │   │  (REST/JSON)   │  │        前端
+   ───────────────────►  │  │ 采集 Scheduler │   │   API Server   │  │  ◄──── React SPA
+       (轮询/搜索)        │  │   (cron jobs)  │   │ (REST + 静态前端)│  │   (静态资源,Go 托管)
                          │  └───────┬───────┘   └───────┬───────┘  │
                          │          │   共享 *.db 文件    │          │
                          │          └────────┬───────────┘          │
@@ -72,7 +72,7 @@
 1. **API Server（Go）**：对外 REST/JSON。只读 SQLite。提供榜单、仓库详情、搜索、语言、（Phase 1+）徽章/话题/提交、（Phase 2+）开发者榜。
 2. **采集 Scheduler（Go，同进程内 goroutine）**：cron 触发三类作业（发现 / 快照 / 评分物化）。SQLite 的唯一写者。
 3. **SQLite（WAL）**：单一 `.db` 文件，API 与 Scheduler 同机共享。
-4. **Next.js 前端（SSR）**：服务端渲染调用 Go API，产出可索引页面与 OG/结构化数据。
+4. **React SPA（Vite,客户端渲染）**：构建为静态资源(JS/CSS/index.html),由 Go API Server 直接托管(`embed` 嵌入或静态目录),浏览器内调用 REST API 渲染。无 SSR/SEO。
 5. **Litestream**：将 WAL 持续流式备份到对象存储，提供 PITR/异地容灾。
 
 ### 3.2 为什么是「单 Go 二进制 + 内嵌 SQLite」
@@ -93,8 +93,8 @@ trends/
 │   ├── badge/                    # SVG 徽章生成（Phase 1）
 │   └── config/                   # 环境配置
 ├── migrations/                   # SQL 迁移脚本（编号顺序执行）
-├── web/                          # Next.js 前端
-│   ├── app/ 或 pages/
+├── web/                          # React SPA (Vite + TS);构建产物嵌入 Go 由 API 托管
+│   ├── src/
 │   └── ...
 ├── spec.md
 └── README.md
@@ -274,7 +274,8 @@ CREATE TABLE developers (
 | GET | `/api/v1/search` | 全文搜索（按 `full_name`/`description`）。Query：`q`、`language`、分页。 |
 | GET | `/api/v1/languages` | 语言列表及各自在榜数量（用于筛选 Tab）。 |
 | GET | `/healthz` | 健康检查（DB 可达、最近一次成功采集时间）。 |
-| GET | `/sitemap.xml`, `/robots.txt` | SEO。 |
+
+> 前端为客户端渲染 SPA,**不提供 `/sitemap.xml`/`/robots.txt`**(SEO 非目标)。API Server 额外托管前端静态资源(`/`、`/assets/*`),非 API 路径回退到 `index.html` 由前端路由接管。
 
 ### Phase 1+
 | 方法 | 路径 | 说明 |
@@ -312,27 +313,28 @@ CREATE TABLE developers (
 
 ---
 
-## 8. 前端（Next.js / SSR）
+## 8. 前端（React SPA / Vite,客户端渲染）
 
-### 8.1 页面与路由
-| 路由 | 内容 | 渲染 |
-|---|---|---|
-| `/` | 首页：当日趋势榜 + 时间维度切换 + 语言 Tab | SSR/ISR |
-| `/trending/[period]` | `daily`/`weekly`/`monthly` 各期榜单 | SSR/ISR |
-| `/languages/[lang]` | 按语言的趋势榜落地页 | SSR/ISR |
-| `/repositories/[id]` | 仓库详情：star 曲线 + 历史排名 + 元信息 | SSR |
-| `/search` | 搜索结果 | SSR |
-| `/topics`, `/topics/[slug]` | 话题页（Phase 1） | SSR/ISR |
-| `/submit` | 提交收录（Phase 1） | CSR + API |
-| `/trending/developers` | 开发者榜（Phase 2） | SSR/ISR |
-| `/about` | 方法论说明（评分如何计算，建立信任） | 静态 |
+**SEO 非目标**：纯客户端渲染,不做 SSR/SSG/sitemap。构建产物(静态 JS/CSS/index.html)由 Go API Server 托管(见 §7 说明),也可放 CDN。客户端路由(react-router 等),所有页面在浏览器内调用 REST API 渲染。
 
-### 8.2 SEO 策略（公众产品关键）
-- 全部内容页 **服务端渲染**，确保可被索引；列表页用 ISR（增量静态再生）降低源站压力。
-- 每页注入 `<title>`/`meta description`/OpenGraph/Twitter Card；仓库页加 schema.org 结构化数据。
-- `/sitemap.xml` 动态生成，覆盖所有仓库/语言/话题页；`robots.txt` 放行。
-- 语义化 URL（`/languages/python`、`/topics/ai-agent`）。
-- 隐私友好：无追踪像素、无弹窗（与 trendshift 一致的产品调性）。
+### 8.1 路由(客户端)
+| 路由 | 内容 |
+|---|---|
+| `/` | 首页：当日趋势榜 + 时间维度(日/周/月)切换 + 语言 Tab |
+| `/trending/:period` | 各期榜单(`daily`/`weekly`/`monthly`) |
+| `/languages/:lang` | 按语言筛选的榜单 |
+| `/repositories/:id` | 仓库详情：star 曲线 + 历史排名 + 元信息 |
+| `/search` | 搜索结果 |
+| `/topics`, `/topics/:slug` | 话题页（Phase 1） |
+| `/submit` | 提交收录（Phase 1） |
+| `/trending/developers` | 开发者榜（Phase 2） |
+| `/about` | 方法论说明（评分如何计算,建立信任） |
+
+### 8.2 前端要点
+- **技术**：Vite + React + TypeScript;数据用一个轻量 fetch 封装调用 `/api/v1/*`;图表(star 曲线)用一个轻量图表库。
+- **状态**:URL 即状态(period/language/page 走 query/path),便于分享与回退。
+- **隐私友好**:无追踪像素、无弹窗(与 trendshift 一致的调性)。
+- **不做**:SSR、预渲染、sitemap、OG/结构化数据(SEO 非目标)。若日后需要 SEO,再单独评估 SSG。
 
 ---
 
@@ -362,7 +364,7 @@ CREATE TABLE developers (
 ## 11. 部署与运维
 
 - **后端**：单 Go 二进制（API + Scheduler），跑在一台 VPS / 容器；持久卷挂载 `.db`；旁路运行 Litestream。
-- **前端**：Next.js 以 standalone 模式部署（同机 Node 运行时或托管平台），通过内网/公网调用 Go API。
+- **前端**：Vite 构建出静态资源,嵌入 Go 二进制由 API Server 一并托管(单部署单元,无独立前端服务);或单独丢 CDN/对象存储。
 - **回滚**：二进制可快速回退；DB 借 Litestream 做时点恢复。
 - **环境变量（示例）**：`GITHUB_TOKENS`、`DB_PATH`、`LITESTREAM_*`、`SCORING_WEIGHTS`、`CRON_*`、`API_LISTEN_ADDR`。
 
@@ -402,7 +404,7 @@ CREATE TABLE developers (
 
 - **M0 — 数据地基**：GitHub 客户端 + Discovery/Snapshot 作业 + SQLite schema/迁移 + Litestream。产出：宇宙建立、每日快照可跑。
 - **M1 — 评分与榜单**：Scoring 作业 + `trending_rankings` 物化 + `/api/v1/trending` & `/repositories/*` API。产出：可查的日/周/月榜。
-- **M2 — 前端与 SEO**：Next.js 首页/各期页/详情页/搜索 + SSR + sitemap/OG。产出：**可上线的 MVP**。
+- **M2 — 前端 SPA**：Vite + React 首页/各期页/语言筛选/详情页(star 曲线)/搜索,客户端渲染,构建产物由 Go 二进制托管。**无 SSR/SEO**。产出：**可上线的 MVP**。
 - **M3 — 增长（Phase 1）**：Badge + 提交收录 + 话题页。
 
 ---
