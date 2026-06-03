@@ -1,0 +1,9 @@
+dbs:
+  - path: ${DB_PATH}            # 与 trends 的 DB_PATH 一致,如 /data/trends.db
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_BUCKET}
+        path: trends
+        endpoint: ${LITESTREAM_ENDPOINT}   # 用 R2/MinIO 时设置;AWS S3 可省略
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
