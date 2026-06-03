@@ -14,5 +14,7 @@ bin/
 web/node_modules/
 web/dist/
 
-# embedded SPA build output (placeholder index.html is committed; real build via `make web`)
-internal/api/dist/assets/
+# embedded SPA build output: ignore everything except the committed placeholder index.html.
+# `make web` overwrites this dir with the real Vite build (embedded into the binary at build time).
+internal/api/dist/*
+!internal/api/dist/index.html
