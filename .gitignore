@@ -13,3 +13,6 @@ bin/
 # web (frontend)
 web/node_modules/
 web/dist/
+
+# embedded SPA build output (placeholder index.html is committed; real build via `make web`)
+internal/api/dist/assets/
