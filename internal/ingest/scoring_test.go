@@ -62,3 +62,42 @@ func TestRunScoringEmptyUniverseIsNoop(t *testing.T) {
 	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM trending_rankings`).Scan(&count))
 	require.Equal(t, 0, count)
 }
+
+// 端到端验证:weekly 窗口对多天历史求和,且活跃但本期无快照的仓库被过滤。
+func TestRunScoringWeeklySumsMultiDayHistoryAndFiltersUnsnapshotted(t *testing.T) {
+	db := newTestDB(t)
+
+	// repo A:本周窗口 [06-04..06-10] 内多天有增量,累计 60
+	idA, err := db.UpsertRepository(store.Repository{
+		GitHubID: 1, NodeID: "RA", FullName: "a/A", Owner: "a", Name: "A", HTMLURL: "u", Language: "Go",
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.UpdateRepositoryMetrics(1, 1000, 0, 0, 0, "2026-06-10T00:00:00Z"))
+	for _, s := range []struct {
+		date  string
+		delta int
+	}{{"2026-06-08", 10}, {"2026-06-09", 20}, {"2026-06-10", 30}} {
+		require.NoError(t, db.InsertSnapshot(store.Snapshot{RepositoryID: idA, Date: s.date, Stars: 1000, StarDelta: s.delta}))
+	}
+
+	// repo B:活跃但从未拍过快照 → 本期 windowDelta=0,应被过滤
+	_, err = db.UpsertRepository(store.Repository{
+		GitHubID: 2, NodeID: "RB", FullName: "a/B", Owner: "a", Name: "B", HTMLURL: "u", Language: "Go",
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.UpdateRepositoryMetrics(2, 1000, 0, 0, 0, "2026-06-10T00:00:00Z"))
+
+	require.NoError(t, RunScoring(context.Background(), db, "2026-06-10", scoring.DefaultConfig()))
+
+	var count int
+	require.NoError(t, db.SQL().QueryRow(
+		`SELECT COUNT(*) FROM trending_rankings WHERE period='weekly' AND period_date='2026-06-10'`).Scan(&count))
+	require.Equal(t, 1, count) // 只有 A 上榜,B 被过滤
+
+	var repoID int64
+	var starDelta int
+	require.NoError(t, db.SQL().QueryRow(
+		`SELECT repository_id, star_delta FROM trending_rankings WHERE period='weekly' AND period_date='2026-06-10' AND rank=1`).Scan(&repoID, &starDelta))
+	require.Equal(t, idA, repoID)
+	require.Equal(t, 60, starDelta) // weekly 窗口累计 10+20+30
+}

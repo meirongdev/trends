@@ -12,6 +12,7 @@ import (
 	"github.com/meirongdev/trends/internal/github"
 	"github.com/meirongdev/trends/internal/ingest"
 	"github.com/meirongdev/trends/internal/scheduler"
+	"github.com/meirongdev/trends/internal/scoring"
 	"github.com/meirongdev/trends/internal/store"
 )
 
@@ -23,6 +24,8 @@ var discoveryQueries = []string{
 	"stars:1000..5000",
 	"stars:>5000",
 }
+
+func todayUTC() string { return time.Now().UTC().Format("2006-01-02") }
 
 func main() {
 	cfg := config.Load()
@@ -37,6 +40,7 @@ func main() {
 	defer db.Close()
 
 	gh := github.NewClient(cfg.GitHubAPIBaseURL, cfg.GitHubGraphQLURL, cfg.GitHubTokens)
+	scoreCfg := scoring.DefaultConfig()
 
 	runDiscovery := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
@@ -44,14 +48,18 @@ func main() {
 		_, err := ingest.RunDiscovery(ctx, db, gh, discoveryQueries, 10)
 		return err
 	}
-	runSnapshot := func() error {
+	runSnapshot := func(date string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 		defer cancel()
-		date := time.Now().UTC().Format("2006-01-02")
 		return ingest.RunSnapshot(ctx, db, gh, date, 100)
 	}
+	runScoring := func(date string) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+		return ingest.RunScoring(ctx, db, date, scoreCfg)
+	}
 
-	// RUN_ONCE=discovery|snapshot 用于手动触发一次后退出;作业失败时以非零码退出,便于 CI/cron 感知。
+	// RUN_ONCE=discovery|snapshot|score 用于手动触发一次后退出;失败以非零码退出。
 	switch os.Getenv("RUN_ONCE") {
 	case "discovery":
 		if err := runDiscovery(); err != nil {
@@ -60,8 +68,14 @@ func main() {
 		}
 		return
 	case "snapshot":
-		if err := runSnapshot(); err != nil {
+		if err := runSnapshot(todayUTC()); err != nil {
 			slog.Error("snapshot run-once failed", "err", err)
+			os.Exit(1)
+		}
+		return
+	case "score":
+		if err := runScoring(todayUTC()); err != nil {
+			slog.Error("score run-once failed", "err", err)
 			os.Exit(1)
 		}
 		return
@@ -73,9 +87,16 @@ func main() {
 				slog.Error("discovery job", "err", err)
 			}
 		}},
+		// 快照成功后链式评分;两步共用同一 as-of 日期,确保榜单与刚写入的快照对齐
+		// (避免快照跨过 UTC 午夜时,评分用到与快照不同的日期)。
 		scheduler.Job{Spec: cfg.SnapshotCron, Run: func() {
-			if err := runSnapshot(); err != nil {
+			date := todayUTC()
+			if err := runSnapshot(date); err != nil {
 				slog.Error("snapshot job", "err", err)
+				return
+			}
+			if err := runScoring(date); err != nil {
+				slog.Error("scoring job", "err", err)
 			}
 		}},
 	)

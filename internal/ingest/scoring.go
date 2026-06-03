@@ -15,7 +15,7 @@ func RunScoring(ctx context.Context, db *store.DB, asOf string, cfg scoring.Conf
 		return err
 	}
 
-	// 加载足够的历史:最大窗口的两倍(算 accel 需要前一个等长窗口)。
+	// 加载足够的历史:覆盖最大窗口与其前一个等长窗口(共 2*maxWindow-1 天),供 accel 计算。
 	maxWindow := 1
 	for _, w := range cfg.PeriodDays {
 		if w > maxWindow {
