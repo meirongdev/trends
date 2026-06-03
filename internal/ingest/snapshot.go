@@ -26,9 +26,17 @@ func RunSnapshot(ctx context.Context, db *store.DB, gh Fetcher, date string, bat
 	// 建立 github_id -> 仓库内部 id 的映射,并按 node_id 分批。
 	idByGitHubID := make(map[int64]int64, len(repos))
 	nodeIDs := make([]string, 0, len(repos))
+	skipped := 0
 	for _, r := range repos {
+		if r.NodeID == "" {
+			skipped++
+			continue
+		}
 		idByGitHubID[r.GitHubID] = r.ID
 		nodeIDs = append(nodeIDs, r.NodeID)
+	}
+	if skipped > 0 {
+		slog.Warn("snapshot skipped repos with empty node_id", "count", skipped)
 	}
 
 	syncedAt := date + "T00:00:00Z"

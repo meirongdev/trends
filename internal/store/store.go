@@ -32,6 +32,9 @@ func Open(path string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 单连接:把读写串行化到一条连接,避免两个 cron 作业并发写 SQLite 触发 SQLITE_BUSY。
+	// M0 只有 worker 访问 DB;M1 引入 API 并发读时再评估读写连接分离。
+	sqlDB.SetMaxOpenConns(1)
 	if err := sqlDB.Ping(); err != nil {
 		sqlDB.Close()
 		return nil, err

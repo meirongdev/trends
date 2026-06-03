@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/meirongdev/trends/internal/github"
@@ -98,4 +99,62 @@ func TestRunSnapshotSkipsUnknownGitHubID(t *testing.T) {
 	var count int
 	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM repository_snapshots`).Scan(&count))
 	require.Equal(t, 0, count) // 未知 github_id 被跳过,不写快照
+}
+
+// recordingFetcher 按请求的 node_id 返回对应指标,并记录每次批次大小,用于验证分批与空 id 跳过。
+type recordingFetcher struct {
+	byNode     map[string]github.RepoMetrics
+	batchSizes []int
+}
+
+func (r *recordingFetcher) FetchByNodeIDs(_ context.Context, nodeIDs []string) ([]github.RepoMetrics, error) {
+	r.batchSizes = append(r.batchSizes, len(nodeIDs))
+	var out []github.RepoMetrics
+	for _, id := range nodeIDs {
+		if m, ok := r.byNode[id]; ok {
+			out = append(out, m)
+		}
+	}
+	return out, nil
+}
+
+func TestRunSnapshotProcessesMultipleBatches(t *testing.T) {
+	db := newTestDB(t)
+	byNode := map[string]github.RepoMetrics{}
+	for i := int64(1); i <= 3; i++ {
+		node := fmt.Sprintf("R%d", i)
+		_, err := db.UpsertRepository(store.Repository{
+			GitHubID: i, NodeID: node, FullName: fmt.Sprintf("a/%d", i), Owner: "a", Name: fmt.Sprintf("%d", i), HTMLURL: "u",
+		})
+		require.NoError(t, err)
+		byNode[node] = github.RepoMetrics{GitHubID: i, Stars: int(i) * 10}
+	}
+	rf := &recordingFetcher{byNode: byNode}
+	require.NoError(t, RunSnapshot(context.Background(), db, rf, "2026-06-03", 2))
+
+	require.Equal(t, []int{2, 1}, rf.batchSizes) // 3 repos / batchSize 2 → 批次 2 + 1
+	var count int
+	require.NoError(t, db.SQL().QueryRow(
+		`SELECT COUNT(*) FROM repository_snapshots WHERE snapshot_date=?`, "2026-06-03").Scan(&count))
+	require.Equal(t, 3, count)
+}
+
+func TestRunSnapshotSkipsEmptyNodeID(t *testing.T) {
+	db := newTestDB(t)
+	_, err := db.UpsertRepository(store.Repository{
+		GitHubID: 1, NodeID: "R1", FullName: "a/1", Owner: "a", Name: "1", HTMLURL: "u",
+	})
+	require.NoError(t, err)
+	_, err = db.UpsertRepository(store.Repository{
+		GitHubID: 2, NodeID: "", FullName: "a/2", Owner: "a", Name: "2", HTMLURL: "u",
+	})
+	require.NoError(t, err)
+
+	rf := &recordingFetcher{byNode: map[string]github.RepoMetrics{"R1": {GitHubID: 1, Stars: 10}}}
+	require.NoError(t, RunSnapshot(context.Background(), db, rf, "2026-06-03", 100))
+
+	require.Equal(t, []int{1}, rf.batchSizes) // 空 node_id 仓库被跳过,只请求 1 个 id
+	var count int
+	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM repository_snapshots`).Scan(&count))
+	require.Equal(t, 1, count)
 }
