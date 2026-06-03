@@ -1,0 +1,11 @@
+# Go
+trends.db
+trends.db-*
+*.db
+*.db-shm
+*.db-wal
+/trends
+bin/
+
+# env
+.env
