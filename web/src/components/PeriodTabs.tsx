@@ -1,7 +1,7 @@
 import type { Period } from '../api/types'
 
-const PERIODS: Period[] = ['daily', 'weekly', 'monthly']
-const LABELS: Record<Period, string> = { daily: '日', weekly: '周', monthly: '月' }
+const PERIODS: Period[] = ['daily', 'weekly', 'monthly', 'yearly']
+const LABELS: Record<Period, string> = { daily: '日', weekly: '周', monthly: '月', yearly: '年' }
 
 export function PeriodTabs({ active, onChange }: { active: Period; onChange: (p: Period) => void }) {
   return (

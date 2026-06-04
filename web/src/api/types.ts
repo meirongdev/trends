@@ -1,4 +1,4 @@
-export type Period = 'daily' | 'weekly' | 'monthly'
+export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export interface Repository {
   id: number

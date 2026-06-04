@@ -6,7 +6,7 @@ import { PeriodTabs } from '../components/PeriodTabs'
 import { LanguageFilter } from '../components/LanguageFilter'
 import { RepoRow } from '../components/RepoRow'
 
-const VALID: Period[] = ['daily', 'weekly', 'monthly']
+const VALID: Period[] = ['daily', 'weekly', 'monthly', 'yearly']
 
 export function Trending() {
   const { period: periodParam } = useParams()

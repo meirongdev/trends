@@ -63,4 +63,9 @@ describe('Trending page', () => {
       ).toBe(true)
     })
   })
+
+  it('offers a yearly tab', async () => {
+    renderAt('/')
+    expect(await screen.findByRole('tab', { name: '年' })).toBeInTheDocument()
+  })
 })
