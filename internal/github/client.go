@@ -233,3 +233,60 @@ func (c *Client) FetchByNodeIDs(ctx context.Context, nodeIDs []string) ([]RepoMe
 	}
 	return out, nil
 }
+
+// restRepo 是 REST 单仓库响应的字段子集。
+type restRepo struct {
+	ID       int64  `json:"id"`
+	NodeID   string `json:"node_id"`
+	FullName string `json:"full_name"`
+	Name     string `json:"name"`
+	Owner    struct {
+		Login     string `json:"login"`
+		AvatarURL string `json:"avatar_url"`
+	} `json:"owner"`
+	Description     string `json:"description"`
+	Language        string `json:"language"`
+	Homepage        string `json:"homepage"`
+	HTMLURL         string `json:"html_url"`
+	StargazersCount int    `json:"stargazers_count"`
+	ForksCount      int    `json:"forks_count"`
+	OpenIssuesCount int    `json:"open_issues_count"`
+	Archived        bool   `json:"archived"`
+	CreatedAt       string `json:"created_at"`
+}
+
+func (rr restRepo) toRepository() store.Repository {
+	return store.Repository{
+		GitHubID: rr.ID, NodeID: rr.NodeID, FullName: rr.FullName, Owner: rr.Owner.Login, Name: rr.Name,
+		Description: rr.Description, Language: rr.Language, Homepage: rr.Homepage, HTMLURL: rr.HTMLURL,
+		OwnerAvatar: rr.Owner.AvatarURL, Stars: rr.StargazersCount, Forks: rr.ForksCount,
+		OpenIssues: rr.OpenIssuesCount, IsArchived: rr.Archived, RepoCreatedAt: rr.CreatedAt,
+	}
+}
+
+// FetchRepository 用 REST GET /repos/{fullName} 查单个仓库;404 → found=false。
+func (c *Client) FetchRepository(ctx context.Context, fullName string) (store.Repository, bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.restBase+"/repos/"+fullName, nil)
+	if err != nil {
+		return store.Repository{}, false, err
+	}
+	c.auth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return store.Repository{}, false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return store.Repository{}, false, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<10))
+		return store.Repository{}, false, fmt.Errorf("github repos: status %d: %s", resp.StatusCode, b)
+	}
+	var rr restRepo
+	if err := json.NewDecoder(resp.Body).Decode(&rr); err != nil {
+		return store.Repository{}, false, err
+	}
+	return rr.toRepository(), true, nil
+}

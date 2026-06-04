@@ -135,3 +135,34 @@ func TestFetchByNodeIDsRejectsTooManyIDs(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "too many")
 }
+
+func TestFetchRepositoryFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/repos/octo/a", r.URL.Path)
+		w.Write([]byte(`{"id":111,"node_id":"R_111","full_name":"octo/a","name":"a",
+		  "owner":{"login":"octo","avatar_url":"https://av/1"},"description":"d","language":"Go",
+		  "homepage":"","html_url":"https://github.com/octo/a","stargazers_count":150,"forks_count":20,
+		  "open_issues_count":3,"archived":false,"created_at":"2024-01-01T00:00:00Z"}`))
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	repo, found, err := c.FetchRepository(context.Background(), "octo/a")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, int64(111), repo.GitHubID)
+	require.Equal(t, "R_111", repo.NodeID)
+	require.Equal(t, "octo/a", repo.FullName)
+	require.Equal(t, "Go", repo.Language)
+}
+
+func TestFetchRepositoryNotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"message":"Not Found"}`))
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	_, found, err := c.FetchRepository(context.Background(), "no/such")
+	require.NoError(t, err)
+	require.False(t, found)
+}
