@@ -115,6 +115,23 @@ export interface SearchResponse {
   items: Repository[]
 }
 
+export interface ArchiveEntry {
+  repository: Repository
+  appearances: number
+  best_rank: number
+  peak_star_delta: number
+  first_ranked: string
+  last_ranked: string
+}
+
+export interface ArchiveResponse {
+  period: Period
+  page: number
+  per_page: number
+  total: number
+  items: ArchiveEntry[]
+}
+
 export interface Stats {
   active_repos: number
   total_snapshots: number

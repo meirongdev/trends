@@ -8,6 +8,7 @@ import type {
   TopicCount,
   TopicResponse,
   DevelopersResponse,
+  ArchiveResponse,
   Stats,
   Period,
 } from './types'
@@ -99,6 +100,10 @@ export function getDevelopers(period?: Period, page?: number): Promise<Developer
 
 export function getStats(): Promise<Stats> {
   return request<Stats>(`${BASE}/stats`)
+}
+
+export function getArchive(period?: Period, page?: number): Promise<ArchiveResponse> {
+  return request<ArchiveResponse>(`${BASE}/archive${qs({ period, page })}`)
 }
 
 export async function submitRepository(fullName: string): Promise<{ id: number; status: string }> {

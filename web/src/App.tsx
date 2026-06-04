@@ -8,6 +8,7 @@ import { Topics } from './pages/Topics'
 import { TopicDetail } from './pages/TopicDetail'
 import { Developers } from './pages/Developers'
 import { Stats } from './pages/Stats'
+import { Archive } from './pages/Archive'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/topics/:slug" element={<TopicDetail />} />
           <Route path="/trending/developers" element={<Developers />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/archive" element={<Archive />} />
         </Route>
       </Routes>
     </BrowserRouter>

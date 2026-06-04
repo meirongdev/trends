@@ -12,6 +12,9 @@ export function Layout() {
           <Link to="/trending/developers" className="ml-auto text-sm text-blue-700 hover:underline">
             开发者
           </Link>
+          <Link to="/archive" className="text-sm text-blue-700 hover:underline">
+            归档
+          </Link>
           <Link to="/stats" className="text-sm text-blue-700 hover:underline">
             统计
           </Link>
