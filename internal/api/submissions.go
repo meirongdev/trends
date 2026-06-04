@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 
 var fullNameRe = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
@@ -17,9 +18,14 @@ func clientIP(r *http.Request) string {
 	return host
 }
 
-// handleSubmit 接收 owner/repo 收录提交:每 IP 限流 + 格式校验 + 落库 pending。
+// handleSubmit 接收 owner/repo 收录提交:要求登录 + 每用户限流 + 格式校验 + 落库 pending。
 func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
-	if !s.submitLimiter.allow(clientIP(r)) {
+	u, ok := s.currentUser(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "login required")
+		return
+	}
+	if !s.submitLimiter.allow(strconv.FormatInt(u.ID, 10)) {
 		writeError(w, http.StatusTooManyRequests, "too many submissions, try again later")
 		return
 	}
@@ -36,7 +42,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.db.InsertSubmission(body.FullName, clientIP(r), 0)
+	id, err := s.db.InsertSubmission(body.FullName, clientIP(r), u.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "db error")
 		return
