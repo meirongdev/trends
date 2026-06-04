@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { getRepository, getRepositorySnapshots, getRepositoryRankings } from '../api/client'
 import type { RepositoryDetail as RepoDetail, Snapshot, RankingHistory } from '../api/types'
 import { StarChart } from '../components/StarChart'
+import { BadgeBlock } from '../components/BadgeBlock'
 
 export function RepositoryDetail() {
   const { id } = useParams()
@@ -101,6 +102,8 @@ export function RepositoryDetail() {
           <p className="text-sm text-slate-400">还没上过榜。</p>
         )}
       </section>
+
+      <BadgeBlock id={repo.id} fullName={repo.full_name} />
     </div>
   )
 }
