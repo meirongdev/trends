@@ -20,8 +20,9 @@ type repositoryDetailDTO struct {
 	Forks         int    `json:"forks"`
 	OpenIssues    int    `json:"open_issues"`
 	Watchers      int    `json:"watchers"`
-	RepoCreatedAt string `json:"repo_created_at"`
-	BestDailyRank *int   `json:"best_daily_rank"`
+	RepoCreatedAt string   `json:"repo_created_at"`
+	BestDailyRank *int     `json:"best_daily_rank"`
+	Topics        []string `json:"topics"`
 }
 
 // parseRepoID 从路径取出 {id} 并解析为正整数;失败返回 ok=false(调用方回 400)。
@@ -57,12 +58,21 @@ func (s *Server) handleRepository(w http.ResponseWriter, r *http.Request) {
 		bestRank = &br
 	}
 
+	topics, err := s.db.GetRepositoryTopics(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if topics == nil {
+		topics = []string{}
+	}
+
 	writeJSON(w, http.StatusOK, repositoryDetailDTO{
 		ID: repo.ID, FullName: repo.FullName, Owner: repo.Owner, Name: repo.Name,
 		Description: repo.Description, Language: repo.Language, Homepage: repo.Homepage,
 		HTMLURL: repo.HTMLURL, OwnerAvatar: repo.OwnerAvatar,
 		Stars: repo.Stars, Forks: repo.Forks, OpenIssues: repo.OpenIssues, Watchers: repo.Watchers,
-		RepoCreatedAt: repo.RepoCreatedAt, BestDailyRank: bestRank,
+		RepoCreatedAt: repo.RepoCreatedAt, BestDailyRank: bestRank, Topics: topics,
 	})
 }
 

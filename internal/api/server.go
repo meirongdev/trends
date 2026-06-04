@@ -29,6 +29,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/repositories/{id}/snapshots", s.handleRepositorySnapshots)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/rankings", s.handleRepositoryRankings)
 	mux.HandleFunc("GET /api/v1/search", s.handleSearch)
+	mux.HandleFunc("GET /api/v1/topics", s.handleTopics)
+	mux.HandleFunc("GET /api/v1/topics/{slug}", s.handleTopic)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/badge.svg", s.handleBadge)
 	mux.HandleFunc("POST /api/v1/submissions", s.handleSubmit)
 	// 兜底:其余路径交给前端 SPA(静态文件或回退 index.html)。
