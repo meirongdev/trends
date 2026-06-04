@@ -4,17 +4,19 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/meirongdev/trends/internal/store"
 )
 
-// Server 持有只读存储句柄,提供 HTTP 路由。
+// Server 持有存储句柄与提交限流器,提供 HTTP 路由。
 type Server struct {
-	db *store.DB
+	db            *store.DB
+	submitLimiter *rateLimiter
 }
 
 func NewServer(db *store.DB) *Server {
-	return &Server{db: db}
+	return &Server{db: db, submitLimiter: newRateLimiter(20, time.Hour)}
 }
 
 // Routes 构建并返回 HTTP 路由(Go 1.22+ 方法+路径模式)。
@@ -28,6 +30,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/repositories/{id}/rankings", s.handleRepositoryRankings)
 	mux.HandleFunc("GET /api/v1/search", s.handleSearch)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/badge.svg", s.handleBadge)
+	mux.HandleFunc("POST /api/v1/submissions", s.handleSubmit)
 	// 兜底:其余路径交给前端 SPA(静态文件或回退 index.html)。
 	mux.Handle("/", staticHandler())
 	return mux
