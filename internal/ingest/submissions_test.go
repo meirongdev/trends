@@ -20,9 +20,9 @@ func (f *fakeFetcher) FetchRepository(_ context.Context, fullName string) (store
 
 func TestRunSubmissionsAcceptsAndRejects(t *testing.T) {
 	db := newTestDB(t)
-	_, err := db.InsertSubmission("octo/good", "ip")
+	_, err := db.InsertSubmission("octo/good", "ip", 0)
 	require.NoError(t, err)
-	_, err = db.InsertSubmission("no/such", "ip")
+	_, err = db.InsertSubmission("no/such", "ip", 0)
 	require.NoError(t, err)
 
 	ff := &fakeFetcher{repos: map[string]store.Repository{
@@ -43,7 +43,7 @@ func TestRunSubmissionsAcceptsAndRejects(t *testing.T) {
 
 func TestRunSubmissionsSyncsTopics(t *testing.T) {
 	db := newTestDB(t)
-	_, err := db.InsertSubmission("octo/good", "ip")
+	_, err := db.InsertSubmission("octo/good", "ip", 0)
 	require.NoError(t, err)
 	ff := &fakeFetcher{repos: map[string]store.Repository{
 		"octo/good": {GitHubID: 1, NodeID: "R1", FullName: "octo/good", Owner: "octo", Name: "good", HTMLURL: "u", Topics: []string{"go"}},

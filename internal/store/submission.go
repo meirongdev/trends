@@ -9,11 +9,16 @@ type Submission struct {
 	CreatedAt   string
 }
 
-// InsertSubmission 记录一条 pending 提交,返回 id。
-func (d *DB) InsertSubmission(fullName, ip string) (int64, error) {
+// InsertSubmission 记录一条 pending 提交(关联登录用户),返回 id。
+// 传 userID=0 表示匿名提交,user_id 存为 NULL。
+func (d *DB) InsertSubmission(fullName, ip string, userID int64) (int64, error) {
+	var uid interface{}
+	if userID != 0 {
+		uid = userID
+	}
 	res, err := d.db.Exec(
-		`INSERT INTO submissions (full_name, status, submitted_ip, created_at) VALUES (?, 'pending', ?, ?)`,
-		fullName, ip, nowUTC())
+		`INSERT INTO submissions (full_name, status, submitted_ip, user_id, created_at) VALUES (?, 'pending', ?, ?, ?)`,
+		fullName, ip, uid, nowUTC())
 	if err != nil {
 		return 0, err
 	}

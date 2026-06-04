@@ -36,7 +36,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.db.InsertSubmission(body.FullName, clientIP(r))
+	id, err := s.db.InsertSubmission(body.FullName, clientIP(r), 0)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "db error")
 		return
