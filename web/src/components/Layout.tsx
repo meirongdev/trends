@@ -9,7 +9,10 @@ export function Layout() {
             trends
           </Link>
           <span className="text-sm text-slate-500">GitHub 趋势仓库</span>
-          <Link to="/topics" className="ml-auto text-sm text-blue-700 hover:underline">
+          <Link to="/trending/developers" className="ml-auto text-sm text-blue-700 hover:underline">
+            开发者
+          </Link>
+          <Link to="/topics" className="text-sm text-blue-700 hover:underline">
             话题
           </Link>
           <Link to="/search" className="text-sm text-blue-700 hover:underline">

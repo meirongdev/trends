@@ -7,6 +7,7 @@ import type {
   SearchResponse,
   TopicCount,
   TopicResponse,
+  DevelopersResponse,
   Period,
 } from './types'
 
@@ -89,6 +90,10 @@ export function getTopics(): Promise<TopicCount[]> {
 
 export function getTopic(slug: string, page?: number): Promise<TopicResponse> {
   return request<TopicResponse>(`${BASE}/topics/${encodeURIComponent(slug)}${qs({ page })}`)
+}
+
+export function getDevelopers(period?: Period, page?: number): Promise<DevelopersResponse> {
+  return request<DevelopersResponse>(`${BASE}/developers${qs({ period, page })}`)
 }
 
 export async function submitRepository(fullName: string): Promise<{ id: number; status: string }> {

@@ -6,6 +6,7 @@ import { Search } from './pages/Search'
 import { Submit } from './pages/Submit'
 import { Topics } from './pages/Topics'
 import { TopicDetail } from './pages/TopicDetail'
+import { Developers } from './pages/Developers'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/submit" element={<Submit />} />
           <Route path="/topics" element={<Topics />} />
           <Route path="/topics/:slug" element={<TopicDetail />} />
+          <Route path="/trending/developers" element={<Developers />} />
         </Route>
       </Routes>
     </BrowserRouter>

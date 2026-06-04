@@ -66,6 +66,20 @@ export interface TopicResponse {
   items: Repository[]
 }
 
+export interface Developer {
+  login: string
+  avatar: string
+  appearances: number
+}
+
+export interface DevelopersResponse {
+  period: Period
+  page: number
+  per_page: number
+  total: number
+  items: Developer[]
+}
+
 export interface Snapshot {
   date: string
   stars: number
