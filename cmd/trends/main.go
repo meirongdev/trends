@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/meirongdev/trends/internal/api"
+	"github.com/meirongdev/trends/internal/auth"
 	"github.com/meirongdev/trends/internal/config"
 	"github.com/meirongdev/trends/internal/github"
 	"github.com/meirongdev/trends/internal/ingest"
@@ -113,9 +114,16 @@ func main() {
 	sch.Start()
 	defer sch.Stop()
 
+	providers := auth.NewProviders(auth.Config{
+		BaseURL:            cfg.OAuthBaseURL,
+		GitHubClientID:     cfg.GitHubOAuthClientID,
+		GitHubClientSecret: cfg.GitHubOAuthClientSecret,
+		GoogleClientID:     cfg.GoogleOAuthClientID,
+		GoogleClientSecret: cfg.GoogleOAuthClientSecret,
+	})
 	httpServer := &http.Server{
 		Addr:              cfg.APIListenAddr,
-		Handler:           api.NewServer(db).Routes(),
+		Handler:           api.NewServer(db, providers, cfg.OAuthBaseURL).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {

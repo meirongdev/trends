@@ -4,19 +4,32 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/meirongdev/trends/internal/auth"
 	"github.com/meirongdev/trends/internal/store"
 )
 
-// Server 持有存储句柄与提交限流器,提供 HTTP 路由。
+// Server 持有存储句柄、提交限流器与 OAuth providers,提供 HTTP 路由。
 type Server struct {
 	db            *store.DB
 	submitLimiter *rateLimiter
+	providers     map[string]*auth.Provider
+	baseURL       string
+	secureCookies bool
 }
 
-func NewServer(db *store.DB) *Server {
-	return &Server{db: db, submitLimiter: newRateLimiter(20, time.Hour)}
+// NewServer 构建服务;providers 为已配置的 OAuth provider(可空,空则登录降级为不可用)。
+// baseURL 的 scheme 为 https 时 cookie 加 Secure。
+func NewServer(db *store.DB, providers map[string]*auth.Provider, baseURL string) *Server {
+	return &Server{
+		db:            db,
+		submitLimiter: newRateLimiter(30, 24*time.Hour), // 每用户 30 次/天
+		providers:     providers,
+		baseURL:       baseURL,
+		secureCookies: strings.HasPrefix(baseURL, "https"),
+	}
 }
 
 // Routes 构建并返回 HTTP 路由(Go 1.22+ 方法+路径模式)。
@@ -36,6 +49,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/archive", s.handleArchive)
 	mux.HandleFunc("GET /api/v1/repositories/{id}/badge.svg", s.handleBadge)
 	mux.HandleFunc("POST /api/v1/submissions", s.handleSubmit)
+	mux.HandleFunc("GET /api/v1/auth/login", s.handleAuthLogin)
+	mux.HandleFunc("GET /api/v1/auth/callback", s.handleAuthCallback)
+	mux.HandleFunc("GET /api/v1/auth/me", s.handleAuthMe)
+	mux.HandleFunc("POST /api/v1/auth/logout", s.handleAuthLogout)
 	// 兜底:其余路径交给前端 SPA(静态文件或回退 index.html)。
 	mux.Handle("/", staticHandler())
 	return mux

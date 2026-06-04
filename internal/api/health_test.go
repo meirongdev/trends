@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/meirongdev/trends/internal/auth"
 	"github.com/meirongdev/trends/internal/store"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func newTestServer(t *testing.T) (*Server, *store.DB) {
 	db, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
 	require.NoError(t, err)
 	t.Cleanup(func() { db.Close() })
-	return NewServer(db), db
+	return NewServer(db, map[string]*auth.Provider{}, ""), db
 }
 
 func doGET(t *testing.T, s *Server, target string) *httptest.ResponseRecorder {
