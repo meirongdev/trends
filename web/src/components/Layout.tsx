@@ -12,6 +12,9 @@ export function Layout() {
           <Link to="/search" className="ml-auto text-sm text-blue-700 hover:underline">
             搜索
           </Link>
+          <Link to="/submit" className="text-sm text-blue-700 hover:underline">
+            提交
+          </Link>
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">

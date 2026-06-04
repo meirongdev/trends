@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { Trending } from './pages/Trending'
 import { RepositoryDetail } from './pages/RepositoryDetail'
 import { Search } from './pages/Search'
+import { Submit } from './pages/Submit'
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Route path="/trending/:period" element={<Trending />} />
           <Route path="/repositories/:id" element={<RepositoryDetail />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/submit" element={<Submit />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -80,3 +80,22 @@ export function search(p: {
     `${BASE}/search${qs({ q: p.q, language: p.language, page: p.page, per_page: p.perPage })}`,
   )
 }
+
+export async function submitRepository(fullName: string): Promise<{ id: number; status: string }> {
+  const res = await fetch(`${BASE}/submissions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_name: fullName }),
+  })
+  if (!res.ok) {
+    let msg = `request failed: ${res.status}`
+    try {
+      const b = (await res.json()) as { error?: string }
+      if (b?.error) msg = b.error
+    } catch {
+      // ignore non-JSON error bodies
+    }
+    throw new Error(msg)
+  }
+  return (await res.json()) as { id: number; status: string }
+}
