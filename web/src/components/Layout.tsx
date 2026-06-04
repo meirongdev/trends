@@ -1,6 +1,8 @@
 import { Link, Outlet } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 
 export function Layout() {
+  const { user, logout } = useAuth()
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <header className="border-b border-slate-200">
@@ -27,6 +29,15 @@ export function Layout() {
           <Link to="/submit" className="text-sm text-blue-700 hover:underline">
             提交
           </Link>
+          {user ? (
+            <span className="flex items-center gap-2 text-sm">
+              {user.avatar_url && <img src={user.avatar_url} alt="" className="h-6 w-6 rounded-full" />}
+              <span className="text-slate-600">{user.login}</span>
+              <button onClick={() => logout()} className="text-blue-700 hover:underline">
+                登出
+              </button>
+            </span>
+          ) : null}
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">

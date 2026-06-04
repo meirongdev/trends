@@ -9,24 +9,27 @@ import { TopicDetail } from './pages/TopicDetail'
 import { Developers } from './pages/Developers'
 import { Stats } from './pages/Stats'
 import { Archive } from './pages/Archive'
+import { AuthProvider } from './auth/AuthContext'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Trending />} />
-          <Route path="/trending/:period" element={<Trending />} />
-          <Route path="/repositories/:id" element={<RepositoryDetail />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/submit" element={<Submit />} />
-          <Route path="/topics" element={<Topics />} />
-          <Route path="/topics/:slug" element={<TopicDetail />} />
-          <Route path="/trending/developers" element={<Developers />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/archive" element={<Archive />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Trending />} />
+            <Route path="/trending/:period" element={<Trending />} />
+            <Route path="/repositories/:id" element={<RepositoryDetail />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/submit" element={<Submit />} />
+            <Route path="/topics" element={<Topics />} />
+            <Route path="/topics/:slug" element={<TopicDetail />} />
+            <Route path="/trending/developers" element={<Developers />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/archive" element={<Archive />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

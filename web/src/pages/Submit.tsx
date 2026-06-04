@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { submitRepository } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
+import { login } from '../auth/client'
 
 export function Submit() {
+  const { user, providers, loading } = useAuth()
   const [input, setInput] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -19,8 +22,35 @@ export function Submit() {
       setInput('')
     } catch (err) {
       setStatus('error')
-      setMessage(err instanceof Error ? err.message : String(err))
+      const msg = err instanceof Error ? err.message : String(err)
+      setMessage(/401|login required/i.test(msg) ? '登录已失效,请重新登录。' : msg)
     }
+  }
+
+  const labels: Record<string, string> = { github: '用 GitHub 登录', google: '用 Google 登录' }
+
+  if (loading) {
+    return <p className="text-slate-500">加载中…</p>
+  }
+  if (!user) {
+    return (
+      <div className="max-w-lg space-y-4">
+        <h1 className="text-xl font-bold">提交收录</h1>
+        <p className="text-sm text-slate-500">提交前请先登录。</p>
+        <div className="flex gap-2">
+          {providers.map((p) => (
+            <button
+              key={p}
+              onClick={() => login(p)}
+              className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white"
+            >
+              {labels[p] ?? p}
+            </button>
+          ))}
+          {providers.length === 0 && <span className="text-sm text-slate-400">登录暂未开放。</span>}
+        </div>
+      </div>
+    )
   }
 
   return (
