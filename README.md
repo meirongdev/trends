@@ -34,7 +34,7 @@
     make test                    # 前端(Vitest)+ 后端(go test)全部测试
     make build                   # 构建前端 → 嵌入 → 输出 bin/trends(单二进制)
 
-仅后端(不碰前端):`GOPROXY=off go test ./...` / `GOPROXY=off go build ./...`。
+仅后端(不碰前端):`GOPROXY=off go test ./cmd/... ./internal/...`(用此范围而非 `./...`,避免扫描 `web/node_modules` 里的 .go 文件)。
 
 ## 本地运行
 

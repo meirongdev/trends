@@ -20,8 +20,9 @@ test: test-web test-go
 test-web:
 	cd web && npm run test
 
+# 注意:用 ./cmd/... ./internal/... 而非 ./...,避免 go 扫描 web/node_modules 里的 .go 文件。
 test-go:
-	GOPROXY=off go test ./...
+	GOPROXY=off go test ./cmd/... ./internal/...
 
 run: build
 	./bin/trends
