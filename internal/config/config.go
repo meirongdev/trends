@@ -13,6 +13,12 @@ type Config struct {
 	APIListenAddr    string
 	DiscoveryCron    string
 	SnapshotCron     string
+
+	OAuthBaseURL            string
+	GitHubOAuthClientID     string
+	GitHubOAuthClientSecret string
+	GoogleOAuthClientID     string
+	GoogleOAuthClientSecret string
 }
 
 func Load() Config {
@@ -24,6 +30,12 @@ func Load() Config {
 		APIListenAddr:    getenv("API_LISTEN_ADDR", ":8080"),
 		DiscoveryCron:    getenv("DISCOVERY_CRON", "0 1 * * *"),
 		SnapshotCron:     getenv("SNAPSHOT_CRON", "0 0 * * *"),
+
+		OAuthBaseURL:            getenv("OAUTH_BASE_URL", "http://localhost:8080"),
+		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
 	}
 }
 
