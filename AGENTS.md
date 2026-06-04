@@ -71,7 +71,7 @@ Dependency directions (no cycles): `github → store`; `scoring` is pure; `inges
 
 This codebase is built milestone-by-milestone with the superpowers flow: `brainstorming → spec.md → writing-plans → subagent-driven-development → finishing-a-development-branch`. Per-milestone implementation plans live in [`docs/superpowers/plans/`](./docs/superpowers/plans/). The product roadmap is `spec.md` §14.
 
-- **Done (merged to `main`) — MVP + Phase 1 + developer rankings:** M0 (data), M1a (scoring), M1b (read API), M2 (React SPA), M3a (badge), M3b (submission), M3c (topics), M4a (developer rankings: `/api/v1/developers` + `/trending/developers`, live owner-appearance aggregation). **12 API endpoints.** All in one Go binary.
-- **Next:** rest of Phase 2 — Yearly view, Insights/Stats, GitHub-trending history archive. Then Phase 3 (live mentions, accounts, sponsorship).
+- **Done (merged to `main`) — MVP + Phase 1 + Phase 2 (partial):** M0 (data), M1a (scoring), M1b (read API), M2 (React SPA), M3a (badge), M3b (submission), M3c (topics), M4a (developer rankings), M4b (yearly period — enabled across scoring + trending/languages/developers + UI). **12 API endpoints; periods daily/weekly/monthly/yearly.** All in one Go binary.
+- **Next:** rest of Phase 2 — Insights/Stats aggregates, GitHub-trending history archive. Then Phase 3 (live mentions, accounts, sponsorship).
 
 Deferred scoring tuning (fork signal, winsorize, decay, yearly period, per-period weights) is documented in the M1a plan and intentionally not yet implemented.
