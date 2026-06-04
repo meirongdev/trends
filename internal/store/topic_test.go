@@ -1,0 +1,55 @@
+package store
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func seedRepoTopics(t *testing.T, db *DB, gid int64, node, full, lang string, stars int, topics []string) int64 {
+	t.Helper()
+	id, err := db.UpsertRepository(Repository{
+		GitHubID: gid, NodeID: node, FullName: full, Owner: "a", Name: node, HTMLURL: "u", Language: lang,
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.UpdateRepositoryMetrics(gid, stars, 0, 0, 0, "2026-06-10T00:00:00Z"))
+	require.NoError(t, db.SetRepositoryTopics(id, topics))
+	return id
+}
+
+func TestSetAndGetRepositoryTopics(t *testing.T) {
+	db := newTestDB(t)
+	id, err := db.UpsertRepository(sampleRepo())
+	require.NoError(t, err)
+
+	require.NoError(t, db.SetRepositoryTopics(id, []string{"ai", "cli"}))
+	got, err := db.GetRepositoryTopics(id)
+	require.NoError(t, err)
+	require.Equal(t, []string{"ai", "cli"}, got)
+
+	// 重设覆盖旧关联
+	require.NoError(t, db.SetRepositoryTopics(id, []string{"web"}))
+	got, err = db.GetRepositoryTopics(id)
+	require.NoError(t, err)
+	require.Equal(t, []string{"web"}, got)
+}
+
+func TestListTopicsAndRepositoriesByTopic(t *testing.T) {
+	db := newTestDB(t)
+	seedRepoTopics(t, db, 1, "RA", "a/a", "Go", 1000, []string{"ai", "cli"})
+	seedRepoTopics(t, db, 2, "RB", "a/b", "Go", 2000, []string{"ai"})
+
+	topics, err := db.ListTopics()
+	require.NoError(t, err)
+	require.Equal(t, []TopicCount{{Slug: "ai", Name: "ai", Count: 2}, {Slug: "cli", Name: "cli", Count: 1}}, topics)
+
+	total, err := db.CountRepositoriesByTopic("ai")
+	require.NoError(t, err)
+	require.Equal(t, 2, total)
+
+	repos, err := db.RepositoriesByTopic("ai", 25, 0)
+	require.NoError(t, err)
+	require.Len(t, repos, 2)
+	require.Equal(t, "a/b", repos[0].FullName) // stars 2000 在前
+	require.Equal(t, "a/a", repos[1].FullName)
+}
