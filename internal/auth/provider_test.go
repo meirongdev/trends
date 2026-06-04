@@ -30,6 +30,13 @@ func TestGoogleParse(t *testing.T) {
 	require.Equal(t, "pic", id.AvatarURL)
 }
 
+func TestParseRejectsMissingID(t *testing.T) {
+	_, err := GithubParse([]byte(`{"login":"x","avatar_url":"a"}`)) // no id → 0
+	require.Error(t, err)
+	_, err = GoogleParse([]byte(`{"email":"a@b.com","name":"Alice"}`)) // no sub
+	require.Error(t, err)
+}
+
 func TestProviderFlow(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

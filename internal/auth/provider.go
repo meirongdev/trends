@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"golang.org/x/oauth2"
 )
@@ -63,7 +64,7 @@ func NewProvider(s ProviderSpec) *Provider {
 		},
 		userInfoURL: s.UserInfoURL,
 		parse:       s.Parse,
-		client:      http.DefaultClient,
+		client:      &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -109,6 +110,9 @@ func GithubParse(body []byte) (Identity, error) {
 	if err := json.Unmarshal(body, &g); err != nil {
 		return Identity{}, err
 	}
+	if g.ID == 0 {
+		return Identity{}, fmt.Errorf("github userinfo: missing id")
+	}
 	return Identity{
 		Provider: "github", ProviderUserID: strconv.FormatInt(g.ID, 10),
 		Login: g.Login, Email: g.Email, AvatarURL: g.AvatarURL,
@@ -125,6 +129,9 @@ func GoogleParse(body []byte) (Identity, error) {
 	}
 	if err := json.Unmarshal(body, &g); err != nil {
 		return Identity{}, err
+	}
+	if g.Sub == "" {
+		return Identity{}, fmt.Errorf("google userinfo: missing sub")
 	}
 	login := g.Name
 	if login == "" {
