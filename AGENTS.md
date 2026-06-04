@@ -44,7 +44,7 @@ Env vars: `DB_PATH` (default `trends.db`), `GITHUB_TOKENS` (comma-separated, rou
 | `internal/scoring` | Pure momentum scoring (no DB): EWMA + acceleration + window delta + relative growth, cohort min-max, configurable weights, `RankPeriod` |
 | `internal/ingest` | Jobs: `RunDiscovery`, `RunSnapshot` (computes `star_delta`), `RunScoring` (materializes daily/weekly/monthly Top-N) |
 | `internal/scheduler` | Thin `robfig/cron/v3` wrapper with graceful drain on stop |
-| `internal/api` | Read-only REST API (Go 1.22+ `ServeMux`), 13 endpoints incl. `GET /healthz`, `/api/v1/trending`, `/api/v1/languages`, `/api/v1/repositories/{id}` (+ `/snapshots`, `/rankings`, `/badge.svg`), `/api/v1/search`, `/api/v1/topics` (+ `/{slug}`), `/api/v1/developers`, `/api/v1/stats`, `POST /api/v1/submissions`. |
+| `internal/api` | Read-only REST API (Go 1.22+ `ServeMux`), 14 endpoints incl. `GET /healthz`, `/api/v1/trending`, `/api/v1/languages`, `/api/v1/repositories/{id}` (+ `/snapshots`, `/rankings`, `/badge.svg`), `/api/v1/search`, `/api/v1/topics` (+ `/{slug}`), `/api/v1/developers`, `/api/v1/stats`, `/api/v1/archive`, `POST /api/v1/submissions`. |
 | `cmd/trends` | Wires config → store → github → jobs → scheduler + HTTP server |
 
 Dependency directions (no cycles): `github → store`; `scoring` is pure; `ingest → {github, store, scoring}`; `api → store`; `scheduler` standalone; `cmd → all`. Jobs depend on GitHub only through narrow interfaces (`ingest.Discoverer`, `ingest.Fetcher`) so they can be tested with fakes.
@@ -71,7 +71,7 @@ Dependency directions (no cycles): `github → store`; `scoring` is pure; `inges
 
 This codebase is built milestone-by-milestone with the superpowers flow: `brainstorming → spec.md → writing-plans → subagent-driven-development → finishing-a-development-branch`. Per-milestone implementation plans live in [`docs/superpowers/plans/`](./docs/superpowers/plans/). The product roadmap is `spec.md` §14.
 
-- **Done (merged to `main`) — MVP + Phase 1 + Phase 2 (partial):** M0 (data), M1a (scoring), M1b (read API), M2 (React SPA), M3a (badge), M3b (submission), M3c (topics), M4a (developer rankings), M4b (yearly period — enabled across scoring + trending/languages/developers + UI), M4c (insights/stats — `GET /api/v1/stats` site aggregate + `/stats` page). **13 API endpoints; periods daily/weekly/monthly/yearly.** All in one Go binary.
-- **Next:** rest of Phase 2 — GitHub-trending history archive (browse all repos that ever ranked). Then Phase 3 (live mentions, accounts, sponsorship).
+- **Done (merged to `main`) — MVP + Phase 1 + Phase 2 COMPLETE:** M0 (data), M1a (scoring), M1b (read API), M2 (React SPA), M3a (badge), M3b (submission), M3c (topics), M4a (developer rankings), M4b (yearly period — enabled across scoring + trending/languages/developers + UI), M4c (insights/stats — `GET /api/v1/stats` site aggregate + `/stats` page), M4d (history archive — `GET /api/v1/archive` "ever ranked" aggregate + `/archive` page). **14 API endpoints; periods daily/weekly/monthly/yearly.** All in one Go binary.
+- **Next:** Phase 3 (live mentions, accounts/subscriptions, sponsorship). Deferred polish: scoring tuning (fork signal, winsorize, decay, per-period weights), topic curation whitelist, developers/archive materialized tables.
 
 Deferred scoring tuning (fork signal, winsorize, decay, yearly period, per-period weights) is documented in the M1a plan and intentionally not yet implemented.
