@@ -141,3 +141,14 @@ export interface Stats {
   latest_ranking_date: string
   last_synced_at: string
 }
+
+export interface AuthUser {
+  login: string
+  avatar_url: string
+  provider: string
+}
+
+export interface MeResponse {
+  user: AuthUser | null
+  providers: string[]
+}
