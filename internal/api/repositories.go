@@ -7,19 +7,19 @@ import (
 )
 
 type repositoryDetailDTO struct {
-	ID            int64  `json:"id"`
-	FullName      string `json:"full_name"`
-	Owner         string `json:"owner"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	Language      string `json:"language"`
-	Homepage      string `json:"homepage"`
-	HTMLURL       string `json:"html_url"`
-	OwnerAvatar   string `json:"owner_avatar"`
-	Stars         int    `json:"stars"`
-	Forks         int    `json:"forks"`
-	OpenIssues    int    `json:"open_issues"`
-	Watchers      int    `json:"watchers"`
+	ID            int64    `json:"id"`
+	FullName      string   `json:"full_name"`
+	Owner         string   `json:"owner"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Language      string   `json:"language"`
+	Homepage      string   `json:"homepage"`
+	HTMLURL       string   `json:"html_url"`
+	OwnerAvatar   string   `json:"owner_avatar"`
+	Stars         int      `json:"stars"`
+	Forks         int      `json:"forks"`
+	OpenIssues    int      `json:"open_issues"`
+	Watchers      int      `json:"watchers"`
 	RepoCreatedAt string   `json:"repo_created_at"`
 	BestDailyRank *int     `json:"best_daily_rank"`
 	Topics        []string `json:"topics"`

@@ -22,7 +22,7 @@ func RunScoring(ctx context.Context, db *store.DB, asOf string, cfg scoring.Conf
 			maxWindow = w
 		}
 	}
-	from, err := scoring.AddDays(asOf, -(2*maxWindow-1))
+	from, err := scoring.AddDays(asOf, -(2*maxWindow - 1))
 	if err != nil {
 		return err
 	}

@@ -43,8 +43,8 @@ func TestWindowSignalsSplitsCurrentAndPrevWindows(t *testing.T) {
 	wd, accel, ew, err := windowSignals(in, "2026-06-10", 2, 0.5)
 	require.NoError(t, err)
 	require.Equal(t, 30, wd)                    // 10+20
-	require.InDelta(t, 30-12, accel, 1e-9)       // current 30 - prev 12
-	require.InDelta(t, 0.5*20+0.5*10, ew, 1e-9)  // ewma over [10,20] asc
+	require.InDelta(t, 30-12, accel, 1e-9)      // current 30 - prev 12
+	require.InDelta(t, 0.5*20+0.5*10, ew, 1e-9) // ewma over [10,20] asc
 }
 
 func TestWindowSignalsDailyWindowIsSingleDay(t *testing.T) {

@@ -69,13 +69,13 @@ type searchResponse struct {
 			Login     string `json:"login"`
 			AvatarURL string `json:"avatar_url"`
 		} `json:"owner"`
-		Description     string `json:"description"`
-		Language        string `json:"language"`
-		Homepage        string `json:"homepage"`
-		HTMLURL         string `json:"html_url"`
-		StargazersCount int    `json:"stargazers_count"`
-		ForksCount      int    `json:"forks_count"`
-		OpenIssuesCount int    `json:"open_issues_count"`
+		Description     string   `json:"description"`
+		Language        string   `json:"language"`
+		Homepage        string   `json:"homepage"`
+		HTMLURL         string   `json:"html_url"`
+		StargazersCount int      `json:"stargazers_count"`
+		ForksCount      int      `json:"forks_count"`
+		OpenIssuesCount int      `json:"open_issues_count"`
 		Archived        bool     `json:"archived"`
 		CreatedAt       string   `json:"created_at"`
 		Topics          []string `json:"topics"`
@@ -246,13 +246,13 @@ type restRepo struct {
 		Login     string `json:"login"`
 		AvatarURL string `json:"avatar_url"`
 	} `json:"owner"`
-	Description     string `json:"description"`
-	Language        string `json:"language"`
-	Homepage        string `json:"homepage"`
-	HTMLURL         string `json:"html_url"`
-	StargazersCount int    `json:"stargazers_count"`
-	ForksCount      int    `json:"forks_count"`
-	OpenIssuesCount int    `json:"open_issues_count"`
+	Description     string   `json:"description"`
+	Language        string   `json:"language"`
+	Homepage        string   `json:"homepage"`
+	HTMLURL         string   `json:"html_url"`
+	StargazersCount int      `json:"stargazers_count"`
+	ForksCount      int      `json:"forks_count"`
+	OpenIssuesCount int      `json:"open_issues_count"`
 	Archived        bool     `json:"archived"`
 	CreatedAt       string   `json:"created_at"`
 	Topics          []string `json:"topics"`
