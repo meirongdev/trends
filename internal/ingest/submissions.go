@@ -35,8 +35,14 @@ func RunSubmissions(ctx context.Context, db *store.DB, gh RepoFetcher, limit int
 			rejected++
 			continue
 		}
-		if _, err := db.UpsertRepository(repo); err != nil {
+		id, err := db.UpsertRepository(repo)
+		if err != nil {
 			return err
+		}
+		if len(repo.Topics) > 0 {
+			if err := db.SetRepositoryTopics(id, repo.Topics); err != nil {
+				return err
+			}
 		}
 		if err := db.MarkSubmission(sub.ID, "accepted", ""); err != nil {
 			return err

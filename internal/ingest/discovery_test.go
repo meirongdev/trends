@@ -107,3 +107,19 @@ func TestRunDiscoveryBreaksOnEmptyPage(t *testing.T) {
 func (f *fakeClient) FetchByNodeIDs(_ context.Context, _ []string) ([]github.RepoMetrics, error) {
 	return f.metrics, nil
 }
+
+func TestRunDiscoverySyncsTopics(t *testing.T) {
+	db := newTestDB(t)
+	fc := &fakeClient{searchByQuery: map[string][]store.Repository{
+		"q": {{GitHubID: 1, NodeID: "R1", FullName: "a/x", Owner: "a", Name: "x", HTMLURL: "u", Topics: []string{"ai", "cli"}}},
+	}}
+	n, err := RunDiscovery(context.Background(), db, fc, []string{"q"}, 1)
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	repo, err := db.GetRepositoryByGitHubID(1)
+	require.NoError(t, err)
+	topics, err := db.GetRepositoryTopics(repo.ID)
+	require.NoError(t, err)
+	require.Equal(t, []string{"ai", "cli"}, topics)
+}

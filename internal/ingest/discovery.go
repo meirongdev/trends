@@ -33,9 +33,14 @@ func RunDiscovery(ctx context.Context, db *store.DB, gh Discoverer, queries []st
 				break
 			}
 			for _, r := range repos {
-				// 此处不需要 upsert 返回的内部 id。
-				if _, err := db.UpsertRepository(r); err != nil {
+				id, err := db.UpsertRepository(r)
+				if err != nil {
 					return count, err
+				}
+				if len(r.Topics) > 0 {
+					if err := db.SetRepositoryTopics(id, r.Topics); err != nil {
+						return count, err
+					}
 				}
 				count++
 			}

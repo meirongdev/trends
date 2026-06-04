@@ -40,3 +40,19 @@ func TestRunSubmissionsAcceptsAndRejects(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, pend)
 }
+
+func TestRunSubmissionsSyncsTopics(t *testing.T) {
+	db := newTestDB(t)
+	_, err := db.InsertSubmission("octo/good", "ip")
+	require.NoError(t, err)
+	ff := &fakeFetcher{repos: map[string]store.Repository{
+		"octo/good": {GitHubID: 1, NodeID: "R1", FullName: "octo/good", Owner: "octo", Name: "good", HTMLURL: "u", Topics: []string{"go"}},
+	}}
+	require.NoError(t, RunSubmissions(context.Background(), db, ff, 10))
+
+	repo, err := db.GetRepositoryByGitHubID(1)
+	require.NoError(t, err)
+	topics, err := db.GetRepositoryTopics(repo.ID)
+	require.NoError(t, err)
+	require.Equal(t, []string{"go"}, topics)
+}
