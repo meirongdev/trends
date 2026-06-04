@@ -1,0 +1,15 @@
+#!/bin/sh
+# trends pre-commit hook — 由 `make hooks` 启用(git config core.hooksPath .githooks)。
+# Go 检查始终运行;仅当本次改动涉及 web/ 时才跑前端检查(保持提交快速)。
+# 跳过本次检查:git commit --no-verify
+set -e
+
+printf '▶ pre-commit: gofmt-check + vet + go test\n'
+make fmt-check vet test-go
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^web/'; then
+  printf '▶ pre-commit: web/ 有改动 → typecheck + lint + test\n'
+  make typecheck lint test-web
+fi
+
+printf '✓ pre-commit 通过\n'

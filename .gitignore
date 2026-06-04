@@ -18,3 +18,21 @@ web/dist/
 # `make web` overwrites this dir with the real Vite build (embedded into the binary at build time).
 internal/api/dist/*
 !internal/api/dist/index.html
+
+# Go test / coverage / profiling artifacts
+*.test
+*.out
+coverage.*
+*.prof
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# editor / IDE
+.idea/
+*.swp
+*~
+
+# local scratch (throwaway experiments, e.g. one-off validation programs)
+scratch*/

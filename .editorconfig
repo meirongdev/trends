@@ -1,0 +1,26 @@
+# EditorConfig — https://editorconfig.org
+root = true
+
+# Defaults for all files (web is TS/JS/JSON/CSS/HTML at 2-space, Prettier-style).
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Go uses tabs (gofmt).
+[*.go]
+indent_style = tab
+
+[{go.mod,go.sum}]
+indent_style = tab
+
+# Makefile recipes require real tabs.
+[Makefile]
+indent_style = tab
+
+# Markdown: keep trailing whitespace (two spaces = hard line break).
+[*.md]
+trim_trailing_whitespace = false
