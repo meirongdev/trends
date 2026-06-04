@@ -48,8 +48,11 @@ func main() {
 	runDiscovery := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		_, err := ingest.RunDiscovery(ctx, db, gh, discoveryQueries, 10)
-		return err
+		if _, err := ingest.RunDiscovery(ctx, db, gh, discoveryQueries, 10); err != nil {
+			return err
+		}
+		// 处理用户提交的收录请求,把存在的仓库纳入宇宙。
+		return ingest.RunSubmissions(ctx, db, gh, 200)
 	}
 	runSnapshot := func(date string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
