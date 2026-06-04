@@ -105,6 +105,12 @@ func TestTrendingRejectsBadDate(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestTrendingAcceptsYearly(t *testing.T) {
+	s, _ := newTestServer(t)
+	rec := doGET(t, s, "/api/v1/trending?period=yearly")
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
 func TestTrendingEmptyWhenNoRankings(t *testing.T) {
 	s, _ := newTestServer(t)
 	rec := doGET(t, s, "/api/v1/trending")

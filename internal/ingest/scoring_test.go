@@ -48,11 +48,13 @@ func TestRunScoringMaterializesDailyRankings(t *testing.T) {
 	require.NoError(t, rows.Err())
 	require.Equal(t, []row{{idA, 1, 200}, {idB, 2, 100}}, got)
 
-	var weekly, monthly int
+	var weekly, monthly, yearly int
 	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM trending_rankings WHERE period='weekly' AND period_date='2026-06-10'`).Scan(&weekly))
 	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM trending_rankings WHERE period='monthly' AND period_date='2026-06-10'`).Scan(&monthly))
+	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM trending_rankings WHERE period='yearly' AND period_date='2026-06-10'`).Scan(&yearly))
 	require.Equal(t, 2, weekly)
 	require.Equal(t, 2, monthly)
+	require.Equal(t, 2, yearly)
 }
 
 func TestRunScoringEmptyUniverseIsNoop(t *testing.T) {

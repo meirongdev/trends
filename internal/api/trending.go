@@ -33,7 +33,7 @@ type trendingResponseDTO struct {
 	Items   []trendingItemDTO `json:"items"`
 }
 
-var validPeriods = map[string]bool{"daily": true, "weekly": true, "monthly": true}
+var validPeriods = map[string]bool{"daily": true, "weekly": true, "monthly": true, "yearly": true}
 
 func (s *Server) handleTrending(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()

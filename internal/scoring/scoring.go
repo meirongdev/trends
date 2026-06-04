@@ -29,7 +29,7 @@ func DefaultConfig() Config {
 		Alpha:      0.5,
 		MinStars:   50,
 		TopN:       200,
-		PeriodDays: map[string]int{"daily": 1, "weekly": 7, "monthly": 30},
+		PeriodDays: map[string]int{"daily": 1, "weekly": 7, "monthly": 30, "yearly": 365},
 	}
 }
 
