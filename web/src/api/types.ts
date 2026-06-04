@@ -114,3 +114,13 @@ export interface SearchResponse {
   total: number
   items: Repository[]
 }
+
+export interface Stats {
+  active_repos: number
+  total_snapshots: number
+  languages: number
+  topics: number
+  developers: number
+  latest_ranking_date: string
+  last_synced_at: string
+}

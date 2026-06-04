@@ -8,6 +8,7 @@ import type {
   TopicCount,
   TopicResponse,
   DevelopersResponse,
+  Stats,
   Period,
 } from './types'
 
@@ -94,6 +95,10 @@ export function getTopic(slug: string, page?: number): Promise<TopicResponse> {
 
 export function getDevelopers(period?: Period, page?: number): Promise<DevelopersResponse> {
   return request<DevelopersResponse>(`${BASE}/developers${qs({ period, page })}`)
+}
+
+export function getStats(): Promise<Stats> {
+  return request<Stats>(`${BASE}/stats`)
 }
 
 export async function submitRepository(fullName: string): Promise<{ id: number; status: string }> {
