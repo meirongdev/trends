@@ -4,6 +4,8 @@ import { Trending } from './pages/Trending'
 import { RepositoryDetail } from './pages/RepositoryDetail'
 import { Search } from './pages/Search'
 import { Submit } from './pages/Submit'
+import { Topics } from './pages/Topics'
+import { TopicDetail } from './pages/TopicDetail'
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
           <Route path="/repositories/:id" element={<RepositoryDetail />} />
           <Route path="/search" element={<Search />} />
           <Route path="/submit" element={<Submit />} />
+          <Route path="/topics" element={<Topics />} />
+          <Route path="/topics/:slug" element={<TopicDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

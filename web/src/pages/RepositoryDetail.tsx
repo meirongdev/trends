@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { getRepository, getRepositorySnapshots, getRepositoryRankings } from '../api/client'
 import type { RepositoryDetail as RepoDetail, Snapshot, RankingHistory } from '../api/types'
 import { StarChart } from '../components/StarChart'
@@ -63,6 +63,19 @@ export function RepositoryDetail() {
               <span className="text-green-700">最佳日榜 #{repo.best_daily_rank}</span>
             )}
           </div>
+          {repo.topics.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {repo.topics.map((tp) => (
+                <Link
+                  key={tp}
+                  to={`/topics/${tp}`}
+                  className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200"
+                >
+                  #{tp}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

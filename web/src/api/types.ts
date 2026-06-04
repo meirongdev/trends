@@ -49,6 +49,21 @@ export interface RepositoryDetail {
   watchers: number
   repo_created_at: string
   best_daily_rank: number | null
+  topics: string[]
+}
+
+export interface TopicCount {
+  slug: string
+  name: string
+  count: number
+}
+
+export interface TopicResponse {
+  slug: string
+  page: number
+  per_page: number
+  total: number
+  items: Repository[]
 }
 
 export interface Snapshot {

@@ -22,6 +22,7 @@ describe('RepositoryDetail page', () => {
       watchers: 9,
       repo_created_at: '2024-01-01T00:00:00Z',
       best_daily_rank: 3,
+      topics: ['ai', 'cli'],
     })
     vi.spyOn(client, 'getRepositorySnapshots').mockResolvedValue({
       repository_id: 7,
