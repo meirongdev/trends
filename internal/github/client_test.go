@@ -166,3 +166,29 @@ func TestFetchRepositoryNotFound(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, found)
 }
+
+func TestSearchParsesTopics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"items":[{"id":1,"node_id":"R1","full_name":"a/x","name":"x",
+		  "owner":{"login":"a"},"html_url":"u","topics":["ai","cli"]}]}`))
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	repos, err := c.SearchRepositories(context.Background(), "q", 1)
+	require.NoError(t, err)
+	require.Len(t, repos, 1)
+	require.Equal(t, []string{"ai", "cli"}, repos[0].Topics)
+}
+
+func TestFetchRepositoryParsesTopics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"id":1,"node_id":"R1","full_name":"a/x","name":"x",
+		  "owner":{"login":"a"},"html_url":"u","topics":["go"]}`))
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL, srv.URL+"/graphql", nil)
+	repo, found, err := c.FetchRepository(context.Background(), "a/x")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, []string{"go"}, repo.Topics)
+}

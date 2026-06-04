@@ -76,8 +76,9 @@ type searchResponse struct {
 		StargazersCount int    `json:"stargazers_count"`
 		ForksCount      int    `json:"forks_count"`
 		OpenIssuesCount int    `json:"open_issues_count"`
-		Archived        bool   `json:"archived"`
-		CreatedAt       string `json:"created_at"`
+		Archived        bool     `json:"archived"`
+		CreatedAt       string   `json:"created_at"`
+		Topics          []string `json:"topics"`
 	} `json:"items"`
 }
 
@@ -130,6 +131,7 @@ func (c *Client) SearchRepositories(ctx context.Context, query string, page int)
 			OpenIssues:    it.OpenIssuesCount,
 			IsArchived:    it.Archived,
 			RepoCreatedAt: it.CreatedAt,
+			Topics:        it.Topics,
 		})
 	}
 	return repos, nil
@@ -251,8 +253,9 @@ type restRepo struct {
 	StargazersCount int    `json:"stargazers_count"`
 	ForksCount      int    `json:"forks_count"`
 	OpenIssuesCount int    `json:"open_issues_count"`
-	Archived        bool   `json:"archived"`
-	CreatedAt       string `json:"created_at"`
+	Archived        bool     `json:"archived"`
+	CreatedAt       string   `json:"created_at"`
+	Topics          []string `json:"topics"`
 }
 
 func (rr restRepo) toRepository() store.Repository {
@@ -261,6 +264,7 @@ func (rr restRepo) toRepository() store.Repository {
 		Description: rr.Description, Language: rr.Language, Homepage: rr.Homepage, HTMLURL: rr.HTMLURL,
 		OwnerAvatar: rr.Owner.AvatarURL, Stars: rr.StargazersCount, Forks: rr.ForksCount,
 		OpenIssues: rr.OpenIssuesCount, IsArchived: rr.Archived, RepoCreatedAt: rr.CreatedAt,
+		Topics: rr.Topics,
 	}
 }
 

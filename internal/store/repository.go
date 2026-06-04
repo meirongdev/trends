@@ -27,6 +27,10 @@ type Repository struct {
 	RepoCreatedAt string
 	FirstSeenAt   string
 	LastSyncedAt  string
+
+	// Topics 来自 GitHub API,非 repositories 列;由 ingest 同步进 repository_topics,
+	// 从 DB 读取仓库时为空(详情页话题另经 GetRepositoryTopics 加载)。
+	Topics []string
 }
 
 func b2i(b bool) int {
