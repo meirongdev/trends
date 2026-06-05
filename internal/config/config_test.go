@@ -43,3 +43,27 @@ func TestLoadOAuthDefaultBaseURL(t *testing.T) {
 	c := Load()
 	require.Equal(t, "http://localhost:8080", c.OAuthBaseURL)
 }
+
+func TestLoadDiscoveryDefaults(t *testing.T) {
+	t.Setenv("DISCOVERY_QUERIES", "")
+	t.Setenv("DISCOVERY_MAX_PAGES", "")
+	c := Load()
+	require.Equal(t, defaultDiscoveryQueries, c.DiscoveryQueries)
+	require.Equal(t, 10, c.DiscoveryMaxPages)
+}
+
+func TestLoadDiscoveryOverride(t *testing.T) {
+	// 换行与逗号混用、首尾空白、空项,以及含空格的查询都应正确解析。
+	t.Setenv("DISCOVERY_QUERIES", "stars:>1000\nstars:500..1000, language:go stars:50..100 ,")
+	t.Setenv("DISCOVERY_MAX_PAGES", "5")
+	c := Load()
+	require.Equal(t, []string{"stars:>1000", "stars:500..1000", "language:go stars:50..100"}, c.DiscoveryQueries)
+	require.Equal(t, 5, c.DiscoveryMaxPages)
+}
+
+func TestLoadDiscoveryMaxPagesInvalidFallsBack(t *testing.T) {
+	t.Setenv("DISCOVERY_MAX_PAGES", "abc")
+	require.Equal(t, 10, Load().DiscoveryMaxPages)
+	t.Setenv("DISCOVERY_MAX_PAGES", "0")
+	require.Equal(t, 10, Load().DiscoveryMaxPages)
+}

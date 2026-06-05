@@ -25,6 +25,8 @@
 | `API_LISTEN_ADDR` | `:8080` | HTTP 监听地址 |
 | `DISCOVERY_CRON` | `0 1 * * *` | 发现作业 cron |
 | `SNAPSHOT_CRON` | `0 0 * * *` | 快照作业 cron(成功后链式触发评分) |
+| `DISCOVERY_QUERIES` | 6 段 star 区间切片 | 发现用的 GitHub Search 查询集,**换行或逗号分隔**。默认按 star 切片(绕开单查询 1000 条上限),门槛 ≥50、宇宙约 5k。可整体覆盖成按语言/活跃度切片,如 `language:go stars:>50` 或 `pushed:>2026-01-01 stars:100..500` |
+| `DISCOVERY_MAX_PAGES` | `10` | 每条查询最多翻几页(每页 100 条,sort=stars desc);越大挖得越深、API 调用越多 |
 
 ## 构建与测试
 

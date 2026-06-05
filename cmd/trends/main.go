@@ -20,15 +20,6 @@ import (
 	"github.com/meirongdev/trends/internal/store"
 )
 
-// MVP 阶段的发现查询:按 star 区间切片,后续可迁入配置。
-var discoveryQueries = []string{
-	"stars:50..100",
-	"stars:100..250",
-	"stars:250..1000",
-	"stars:1000..5000",
-	"stars:>5000",
-}
-
 func todayUTC() string { return time.Now().UTC().Format("2006-01-02") }
 
 func main() {
@@ -49,7 +40,7 @@ func main() {
 	runDiscovery := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		if _, err := ingest.RunDiscovery(ctx, db, gh, discoveryQueries, 10); err != nil {
+		if _, err := ingest.RunDiscovery(ctx, db, gh, cfg.DiscoveryQueries, cfg.DiscoveryMaxPages); err != nil {
 			return err
 		}
 		// 处理用户提交的收录请求,把存在的仓库纳入宇宙。
@@ -133,7 +124,9 @@ func main() {
 		}
 	}()
 
-	slog.Info("trends started", "discovery_cron", cfg.DiscoveryCron, "snapshot_cron", cfg.SnapshotCron)
+	slog.Info("trends started",
+		"discovery_cron", cfg.DiscoveryCron, "snapshot_cron", cfg.SnapshotCron,
+		"discovery_queries", len(cfg.DiscoveryQueries), "discovery_max_pages", cfg.DiscoveryMaxPages)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
