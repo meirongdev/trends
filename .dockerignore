@@ -1,0 +1,11 @@
+.git
+.github
+bin/
+web/node_modules/
+web/dist/
+*.db
+*.db-wal
+*.db-shm
+docs/
+.githooks/
+litestream.yml

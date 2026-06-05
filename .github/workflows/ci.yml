@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.3"
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # 前端:装依赖 → 构建(go:embed 需要 dist 存在才能编译)
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: cp -r web/dist/. internal/api/dist/
+
+      # 质量门禁(范围用 ./cmd/... ./internal/...,不用 ./...)
+      - name: gofmt
+        run: test -z "$(gofmt -l cmd internal)" || (gofmt -l cmd internal; exit 1)
+      - run: go vet ./cmd/... ./internal/...
+      - run: npx tsc --noEmit
+        working-directory: web
+
+      # 测试
+      - run: npm run test
+        working-directory: web
+      - run: go test ./cmd/... ./internal/...
