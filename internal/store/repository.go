@@ -50,14 +50,17 @@ const repoSelectColumns = `id, github_id, node_id, full_name, owner, name,
        is_archived, is_active, COALESCE(repo_created_at,''), first_seen_at, COALESCE(last_synced_at,'')`
 
 // UpsertRepository 按 github_id 插入或更新元数据,返回内部 id。
-// first_seen_at 仅在插入时设置;stars/forks 等指标由 UpdateRepositoryMetrics 维护。
+// first_seen_at 与初始 stars/forks 等指标仅在「插入」时写入,让新发现/提交的仓库立即带上
+// 真实星数(否则要等下一次 snapshot 才回填,中间窗口里会以 0 star 出现在统计/话题中);
+// 此后这些指标由 UpdateRepositoryMetrics(snapshot 作业)维护,故不在 ON CONFLICT 分支覆盖。
 // 用后续 SELECT(按唯一键)取回 id:这比 LastInsertId 在 upsert 的 UPDATE 分支上更稳健、更可移植。
 func (d *DB) UpsertRepository(r Repository) (int64, error) {
 	_, err := d.db.Exec(`
 INSERT INTO repositories
   (github_id, node_id, full_name, owner, name, description, language, homepage,
-   html_url, owner_avatar, is_archived, repo_created_at, first_seen_at)
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+   html_url, owner_avatar, is_archived, repo_created_at, first_seen_at,
+   stars, forks, open_issues, watchers)
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(github_id) DO UPDATE SET
   node_id        = excluded.node_id,
   full_name      = excluded.full_name,
@@ -73,6 +76,7 @@ ON CONFLICT(github_id) DO UPDATE SET
 `,
 		r.GitHubID, r.NodeID, r.FullName, r.Owner, r.Name, r.Description, r.Language, r.Homepage,
 		r.HTMLURL, r.OwnerAvatar, b2i(r.IsArchived), r.RepoCreatedAt, nowUTC(),
+		r.Stars, r.Forks, r.OpenIssues, r.Watchers,
 	)
 	if err != nil {
 		return 0, err

@@ -61,13 +61,18 @@ WHERE rt.repository_id=? ORDER BY t.slug`, repoID)
 	return out, rows.Err()
 }
 
-// ListTopics 返回有仓库关联的话题及其计数,按数量降序、slug 升序。
+// ListTopics 返回有「达标活跃仓库」关联的话题及其计数,按数量降序、slug 升序。
+// 计数口径与 Stats / 话题详情一致(见 minStatsStars):只计入 is_active=1 且 stars>=门槛 的仓库,
+// 故仅由未达标仓库支撑的话题不会出现在列表里。
 func (d *DB) ListTopics() ([]TopicCount, error) {
 	rows, err := d.db.Query(`
 SELECT t.slug, t.name, COUNT(rt.repository_id)
-FROM topics t JOIN repository_topics rt ON rt.topic_id = t.id
+FROM topics t
+JOIN repository_topics rt ON rt.topic_id = t.id
+JOIN repositories r ON r.id = rt.repository_id
+WHERE r.is_active=1 AND r.stars >= ?
 GROUP BY t.id
-ORDER BY COUNT(rt.repository_id) DESC, t.slug`)
+ORDER BY COUNT(rt.repository_id) DESC, t.slug`, minStatsStars)
 	if err != nil {
 		return nil, err
 	}
@@ -83,25 +88,25 @@ ORDER BY COUNT(rt.repository_id) DESC, t.slug`)
 	return out, rows.Err()
 }
 
-// CountRepositoriesByTopic 返回某话题下活跃仓库总数。
+// CountRepositoriesByTopic 返回某话题下「达标活跃仓库」总数(口径见 minStatsStars)。
 func (d *DB) CountRepositoriesByTopic(slug string) (int, error) {
 	var n int
 	err := d.db.QueryRow(`
 SELECT COUNT(*) FROM repository_topics rt
 JOIN topics t ON t.id = rt.topic_id
 JOIN repositories r ON r.id = rt.repository_id
-WHERE t.slug=? AND r.is_active=1`, slug).Scan(&n)
+WHERE t.slug=? AND r.is_active=1 AND r.stars >= ?`, slug, minStatsStars).Scan(&n)
 	return n, err
 }
 
-// RepositoriesByTopic 返回某话题下活跃仓库,按 stars 降序、full_name 分页。
+// RepositoriesByTopic 返回某话题下「达标活跃仓库」,按 stars 降序、full_name 分页(口径见 minStatsStars)。
 func (d *DB) RepositoriesByTopic(slug string, limit, offset int) ([]Repository, error) {
 	rows, err := d.db.Query(`SELECT `+repoColsR+`
 FROM repository_topics rt
 JOIN topics t ON t.id = rt.topic_id
 JOIN repositories r ON r.id = rt.repository_id
-WHERE t.slug=? AND r.is_active=1
-ORDER BY r.stars DESC, r.full_name LIMIT ? OFFSET ?`, slug, limit, offset)
+WHERE t.slug=? AND r.is_active=1 AND r.stars >= ?
+ORDER BY r.stars DESC, r.full_name LIMIT ? OFFSET ?`, slug, minStatsStars, limit, offset)
 	if err != nil {
 		return nil, err
 	}

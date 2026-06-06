@@ -35,3 +35,25 @@ func TestStats(t *testing.T) {
 	require.Equal(t, "2026-06-10", s.LatestRankingDate)
 	require.Equal(t, "2026-06-11T00:00:00Z", s.LastSyncedAt)
 }
+
+// 0 star 仓库不计入 Languages / Topics(统计口径,见 minStatsStars),
+// 但仍计入 ActiveRepos(收录口径)。
+func TestStatsExcludeZeroStar(t *testing.T) {
+	db := newTestDB(t)
+
+	// 1 个达标仓库(Go / 话题 ai)
+	id1, err := db.UpsertRepository(Repository{GitHubID: 1, NodeID: "R1", FullName: "a/a", Owner: "a", Name: "a", HTMLURL: "u", Language: "Go", Stars: 100})
+	require.NoError(t, err)
+	require.NoError(t, db.SetRepositoryTopics(id1, []string{"ai"}))
+
+	// 1 个 0 star 仓库,独占语言 Zig 与话题 fresh
+	id2, err := db.UpsertRepository(Repository{GitHubID: 2, NodeID: "R2", FullName: "b/b", Owner: "b", Name: "b", HTMLURL: "u", Language: "Zig"})
+	require.NoError(t, err)
+	require.NoError(t, db.SetRepositoryTopics(id2, []string{"fresh"}))
+
+	s, err := db.Stats()
+	require.NoError(t, err)
+	require.Equal(t, 2, s.ActiveRepos) // 收录口径:两者都算
+	require.Equal(t, 1, s.Languages)   // 统计口径:只数 Go,Zig 被 0 star 排除
+	require.Equal(t, 1, s.Topics)      // 统计口径:只数 ai,fresh 被 0 star 排除
+}
