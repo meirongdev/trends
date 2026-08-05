@@ -40,8 +40,16 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          # Oracle Ampere A1 = ARM64;按需加 linux/amd64 便于本地/其他集群跑
-          platforms: linux/arm64
+          # Oracle Ampere A1 = ARM64 是唯一的运行目标;amd64 不是为了跑,而是**为了能被扫**:
+          # trivy-operator 的扫描 Job 跑 `trivy image <ref>` 且**不带 --platform**,
+          # trivy 远程解析默认 linux/amd64 —— 索引里没有 amd64 子项就直接 FATAL
+          # (`no child with platform linux/amd64 in index`),该镜像于是**从来没被扫过**,
+          # 而告警只数现存报告 → 漏扫静默表现为"0 条 Critical"。
+          # 2026-08-05 清 oracle 73 条 Critical 时发现本镜像正是这么漏掉的。
+          # chart 0.33.1 没有平台开关(extraEnv 只进 operator 不进扫描 Job),故只能出多架构。
+          # 代价很小:前端在 BUILDPLATFORM 上只构一次,Go 是 CGO_ENABLED=0 交叉编译(无 QEMU),
+          # 运行时 distroless/static 本身就是多架构 —— 只多一次 go build。
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
